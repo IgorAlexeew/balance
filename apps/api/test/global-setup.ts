@@ -4,7 +4,7 @@ import path from 'node:path'
 
 /** Свежая тестовая БД по текущей схеме перед прогоном */
 export default function setup() {
-  const cwd = path.resolve(import.meta.dirname, '..')
+  const cwd = path.resolve(__dirname, '..')
   rmSync(path.join(cwd, 'prisma/test.db'), { force: true })
   execSync('pnpm exec prisma db push --skip-generate', {
     cwd,

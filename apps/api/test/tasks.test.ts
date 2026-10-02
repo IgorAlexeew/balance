@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { prisma } from '../src/db'
-import { processDueReminders } from '../src/modules/reminders/scheduler'
+import { db } from './setup'
+import { RemindersScheduler } from '../src/modules/reminders/reminders.scheduler'
 import { clientFor, createGroup, createUser, testApp } from './helpers'
 
 describe('tasks', () => {
   it('личная задача недоступна другим пользователям', async () => {
-    const app = testApp()
+    const app = await testApp()
     const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
     const a = await clientFor(app, anna.id)
     const b = await clientFor(app, boris.id)
@@ -20,7 +20,7 @@ describe('tasks', () => {
   })
 
   it('групповую задачу видят участники; исполнитель — только участник группы', async () => {
-    const app = testApp()
+    const app = await testApp()
     const [anna, boris, eve] = await Promise.all([createUser('Anna'), createUser('Boris'), createUser('Eve')])
     const group = await createGroup(anna.id, [boris.id])
     const a = await clientFor(app, anna.id)
@@ -40,7 +40,7 @@ describe('tasks', () => {
   })
 
   it('перенос в личные снимает исполнителя; completedAt не перезаписывается', async () => {
-    const app = testApp()
+    const app = await testApp()
     const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
     const group = await createGroup(anna.id, [boris.id])
     const a = await clientFor(app, anna.id)
@@ -56,7 +56,7 @@ describe('tasks', () => {
   })
 
   it('напоминание «в срок» без срока — 400', async () => {
-    const app = testApp()
+    const app = await testApp()
     const anna = await createUser('Anna')
     const a = await clientFor(app, anna.id)
     const res = await a.post('/tasks', { title: 'T', reminder: { type: 'at_deadline' } })
@@ -64,12 +64,14 @@ describe('tasks', () => {
   })
 
   it('планировщик уведомляет исполнителя ровно один раз', async () => {
-    const app = testApp()
+    const app = await testApp()
     const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
     const group = await createGroup(anna.id, [boris.id])
     const a = await clientFor(app, anna.id)
     // Срок через 90 минут, напоминание «за 60 минут»
     const deadline = new Date(Date.now() + 90 * 60_000).toISOString()
+    const scheduler = app.get(RemindersScheduler)
+    const processDueReminders = (now: Date) => scheduler.processDue(now)
     const { body: task } = await a.post('/tasks', {
       title: 'Оплатить',
       groupId: group.id,
@@ -89,7 +91,7 @@ describe('tasks', () => {
     expect(first + second).toBe(1)
     expect(await processDueReminders(now)).toBe(0)
 
-    const notifications = await prisma.userNotification.findMany()
+    const notifications = await db.userNotification.findMany()
     expect(notifications).toHaveLength(1)
     expect(notifications[0]!.userId).toBe(boris.id)
   })

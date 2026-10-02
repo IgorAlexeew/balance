@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { optionalText, requiredText } from './common'
-import type { MemberRole } from './enums'
+import { optionalText, requiredText } from './common.js'
+import type { MemberRole } from './enums.js'
 
 export const INVITE_CODE_LENGTH = 8
 export const INVITE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'

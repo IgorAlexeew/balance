@@ -5,7 +5,7 @@ import {
   reminderInputSchema,
   taskUpdateSchema,
   transactionCreateSchema,
-} from './index'
+} from './index.js'
 
 describe('contracts', () => {
   it('weekly: дни недели нормализуются и не могут быть пустыми', () => {

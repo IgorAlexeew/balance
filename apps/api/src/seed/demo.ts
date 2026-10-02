@@ -1,9 +1,8 @@
 import { randomInt } from 'node:crypto'
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz'
 import { INVITE_CODE_ALPHABET, INVITE_CODE_LENGTH } from '@balance/contracts'
-import type { Prisma, User } from '@prisma/client'
-import { prisma } from '../db'
-import { rescheduleTaskReminder } from '../modules/reminders/service'
+import type { Prisma, PrismaClient, User } from '@prisma/client'
+import { rescheduleTaskReminder } from '../modules/reminders/reminder-data'
 
 /**
  * Демо-данные для локальной разработки. Даты считаются относительно «сегодня»
@@ -58,7 +57,12 @@ function slugify(name: string): string {
   return slug || 'user'
 }
 
-async function upsertDemoUser(email: string, name: string, timezone: string): Promise<User> {
+async function upsertDemoUser(
+  prisma: PrismaClient,
+  email: string,
+  name: string,
+  timezone: string,
+): Promise<User> {
   const existing = await prisma.user.findFirst({ where: { email, isDemo: true } })
   return existing ?? prisma.user.create({ data: { email, name, timezone, isDemo: true } })
 }
@@ -67,17 +71,21 @@ async function upsertDemoUser(email: string, name: string, timezone: string): Pr
  * Без имени — основной демо-аккаунт с заполненными данными.
  * С именем — отдельный пустой аккаунт (удобно проверять семейные группы вдвоём).
  */
-export async function ensureDemoUser(name: string | null, timezone: string): Promise<User> {
+export async function ensureDemoUser(
+  prisma: PrismaClient,
+  name: string | null,
+  timezone: string,
+): Promise<User> {
   if (!name) {
-    const user = await upsertDemoUser(DEMO_EMAIL, 'Александр', timezone)
+    const user = await upsertDemoUser(prisma, DEMO_EMAIL, 'Александр', timezone)
     const seeded = await prisma.task.findFirst({ where: { createdById: user.id }, select: { id: true } })
-    if (!seeded) await seedDemoData(user)
+    if (!seeded) await seedDemoData(prisma, user)
     return user
   }
-  return upsertDemoUser(`${slugify(name)}@demo.lifebalance.local`, name, timezone)
+  return upsertDemoUser(prisma, `${slugify(name)}@demo.lifebalance.local`, name, timezone)
 }
 
-export async function seedDemoData(user: User): Promise<void> {
+export async function seedDemoData(prisma: PrismaClient, user: User): Promise<void> {
   const tz = user.timezone
   const today = formatInTimeZone(new Date(), tz, 'yyyy-MM-dd')
   const dayStr = (offset: number) => {
@@ -88,8 +96,8 @@ export async function seedDemoData(user: User): Promise<void> {
   const at = (offset: number, hh: number, mm = 0) =>
     fromZonedTime(`${dayStr(offset)}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`, tz)
 
-  const anna = await upsertDemoUser('anna@demo.lifebalance.local', 'Анна', tz)
-  const misha = await upsertDemoUser('misha@demo.lifebalance.local', 'Миша', tz)
+  const anna = await upsertDemoUser(prisma, 'anna@demo.lifebalance.local', 'Анна', tz)
+  const misha = await upsertDemoUser(prisma, 'misha@demo.lifebalance.local', 'Миша', tz)
 
   const group = await prisma.familyGroup.create({
     data: {
@@ -168,7 +176,7 @@ export async function seedDemoData(user: User): Promise<void> {
   ]
   for (const data of tasks) {
     const task = await prisma.task.create({ data: { ...data, createdById: user.id } })
-    await rescheduleTaskReminder(task.id)
+    await rescheduleTaskReminder(prisma, task.id)
   }
 
   // Операции текущего месяца: день месяца не позже сегодняшнего

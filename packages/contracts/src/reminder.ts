@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { isoDateTimeSchema, timeOfDaySchema } from './common'
-import type { ReminderType } from './enums'
+import { isoDateTimeSchema, timeOfDaySchema } from './common.js'
+import type { ReminderType } from './enums.js'
 
 export const MAX_REMINDER_OFFSET_MINUTES = 30 * 24 * 60
 

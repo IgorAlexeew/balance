@@ -1,19 +1,23 @@
+import { PrismaClient } from '@prisma/client'
 import { afterAll, beforeEach } from 'vitest'
-import { prisma } from '../src/db'
+
+/** Отдельный клиент для очистки и проверок состояния БД в тестах */
+export const db = new PrismaClient()
 
 beforeEach(async () => {
-  await prisma.userNotification.deleteMany()
-  await prisma.reminder.deleteMany()
-  await prisma.task.deleteMany()
-  await prisma.transaction.deleteMany()
-  await prisma.calendarEvent.deleteMany()
-  await prisma.familyMember.deleteMany()
-  await prisma.familyGroup.deleteMany()
-  await prisma.session.deleteMany()
-  await prisma.account.deleteMany()
-  await prisma.user.deleteMany()
+  // Порядок важен из-за внешних ключей без каскада
+  await db.userNotification.deleteMany()
+  await db.reminder.deleteMany()
+  await db.task.deleteMany()
+  await db.transaction.deleteMany()
+  await db.calendarEvent.deleteMany()
+  await db.familyMember.deleteMany()
+  await db.familyGroup.deleteMany()
+  await db.session.deleteMany()
+  await db.account.deleteMany()
+  await db.user.deleteMany()
 })
 
 afterAll(async () => {
-  await prisma.$disconnect()
+  await db.$disconnect()
 })

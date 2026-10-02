@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { groupRefSchema, idSchema, isoDateTimeSchema, optionalText, requiredText } from './common'
-import { TASK_FILTERS, TASK_PRIORITIES, TASK_STATUSES } from './enums'
-import type { TaskPriority, TaskStatus } from './enums'
-import { reminderInputSchema, type ReminderDTO } from './reminder'
+import { groupRefSchema, idSchema, isoDateTimeSchema, optionalText, requiredText } from './common.js'
+import { TASK_FILTERS, TASK_PRIORITIES, TASK_STATUSES } from './enums.js'
+import type { TaskPriority, TaskStatus } from './enums.js'
+import { reminderInputSchema, type ReminderDTO } from './reminder.js'
 
 const nullableRef = idSchema
   .nullish()

@@ -1,24 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { prisma } from '../src/db'
+import { db } from './setup'
 import { clientFor, createGroup, createUser, testApp } from './helpers'
 
 describe('family', () => {
   it('владелец при выходе передаёт группу; задачи ушедшего остаются без исполнителя', async () => {
-    const app = testApp()
+    const app = await testApp()
     const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
     const group = await createGroup(anna.id, [boris.id])
     const a = await clientFor(app, anna.id)
     await a.post('/tasks', { title: 'T', groupId: group.id, assigneeId: anna.id })
 
     expect((await a.post(`/family/${group.id}/leave`)).status).toBe(200)
-    const updated = await prisma.familyGroup.findUniqueOrThrow({ where: { id: group.id } })
+    const updated = await db.familyGroup.findUniqueOrThrow({ where: { id: group.id } })
     expect(updated.ownerId).toBe(boris.id)
-    const task = await prisma.task.findFirstOrThrow()
+    const task = await db.task.findFirstOrThrow()
     expect(task.assigneeId).toBeNull()
   })
 
   it('вступление по коду; повторное — 409; удалить может только владелец', async () => {
-    const app = testApp()
+    const app = await testApp()
     const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
     const a = await clientFor(app, anna.id)
     const b = await clientFor(app, boris.id)
@@ -34,7 +34,7 @@ describe('family', () => {
 
 describe('budget', () => {
   it('сводка месяца считает в копейках и учитывает только нужный месяц и контекст', async () => {
-    const app = testApp()
+    const app = await testApp()
     const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
     const a = await clientFor(app, anna.id)
     const b = await clientFor(app, boris.id)
@@ -62,7 +62,7 @@ describe('budget', () => {
   })
 
   it('отклоняет дробные суммы и несуществующие даты', async () => {
-    const app = testApp()
+    const app = await testApp()
     const anna = await createUser('Anna')
     const a = await clientFor(app, anna.id)
     const fractional = await a.post('/transactions', {
@@ -82,7 +82,7 @@ describe('budget', () => {
   })
 
   it('ИИ-анализ без настройки провайдера — 503', async () => {
-    const app = testApp({ ai: null })
+    const app = await testApp({ ai: null })
     const anna = await createUser('Anna')
     const a = await clientFor(app, anna.id)
     const res = await a.post('/budget/analysis', { month: '2026-10' })

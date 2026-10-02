@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { idSchema } from './common'
-import type { NotificationType } from './enums'
+import { idSchema } from './common.js'
+import type { NotificationType } from './enums.js'
 
 export const notificationListQuerySchema = z.object({
   unread: z

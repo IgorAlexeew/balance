@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { groupRefSchema, isoDateTimeSchema, optionalText, requiredText } from './common'
-import { EVENT_COLORS, type EventColor } from './enums'
+import { groupRefSchema, isoDateTimeSchema, optionalText, requiredText } from './common.js'
+import { EVENT_COLORS, type EventColor } from './enums.js'
 
 const eventFields = {
   title: requiredText(200, 'Название'),

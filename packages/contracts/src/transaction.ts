@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { groupRefSchema, localDateSchema, monthSchema, optionalText, requiredText } from './common'
-import type { Kopecks } from './common'
-import { TRANSACTION_TYPES, type TransactionType } from './enums'
+import { groupRefSchema, localDateSchema, monthSchema, optionalText, requiredText } from './common.js'
+import type { Kopecks } from './common.js'
+import { TRANSACTION_TYPES, type TransactionType } from './enums.js'
 
 /** 1 млрд рублей в копейках */
 export const MAX_AMOUNT_KOPECKS = 100_000_000_000

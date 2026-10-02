@@ -1,8 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
-    "types": ["node"]
+    "types": ["node"],
+    // Nest: CommonJS-сборка и метаданные декораторов для DI
+    "verbatimModuleSyntax": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
-  "include": ["src", "test", "*.config.ts"]
+  "include": ["src", "test", "*.config.mts"]
 }
