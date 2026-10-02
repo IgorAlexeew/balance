@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^db:generate", "db:generate"]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["^build", "db:generate"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {
+      "dependsOn": ["db:generate"]
+    },
+    "typecheck": {
+      "dependsOn": ["db:generate"]
+    },
+    "test": {
+      "dependsOn": ["db:generate"],
+      "env": ["DATABASE_URL"]
+    }
+  }
+}
