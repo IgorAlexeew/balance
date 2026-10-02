@@ -7,6 +7,7 @@ import { fmtDate, formatMoney, initials } from '@/shared/lib/format'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { EmptyState } from '@/shared/ui/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
@@ -42,14 +43,16 @@ export function TransactionsTable({
             ))}
           </div>
         ) : transactions.length === 0 ? (
-          <div className="py-12 text-center">
-            <Wallet className="mx-auto mb-2 size-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">В этом месяце записей пока нет</p>
-            <Button size="sm" variant="outline" className="mt-3 gap-1.5" onClick={onCreate}>
-              <Plus className="size-3.5" />
-              Добавить запись
-            </Button>
-          </div>
+          <EmptyState
+            icon={Wallet}
+            title="В этом месяце записей пока нет"
+            action={
+              <Button size="sm" variant="outline" onClick={onCreate}>
+                <Plus className="size-3.5" />
+                Добавить запись
+              </Button>
+            }
+          />
         ) : (
           <div className="max-h-[480px] overflow-auto rounded-b-xl [&>div]:overflow-visible">
             <Table className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">

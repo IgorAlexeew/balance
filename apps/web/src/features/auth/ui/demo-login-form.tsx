@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
+import { Spinner } from '@/shared/ui/spinner'
 import { useDemoLogin } from '../model/use-auth-actions'
 
 /** Вход без пароля — доступен только в dev-окружении (решает сервер) */
@@ -12,36 +12,37 @@ export function DemoLoginForm() {
 
   return (
     <form
-      className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault()
         if (!login.isPending) login.mutate(name)
       }}
     >
-      <div className="space-y-1.5">
-        <Label htmlFor="demo-name">Демо-вход (только для разработки)</Label>
-        <Input
-          id="demo-name"
-          placeholder="Имя (необязательно)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={40}
-        />
-      </div>
-      <Button
-        type="submit"
-        variant="secondary"
-        size="lg"
-        className="h-11 w-full font-medium"
-        disabled={login.isPending}
-      >
-        {login.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-        Открыть демо
-      </Button>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        Без имени — демо-аккаунт с заполненными задачами, бюджетом и группой. С именем — пустой аккаунт,
-        удобно проверять семейные группы вдвоём.
-      </p>
+      <FieldGroup className="gap-3">
+        <Field>
+          <FieldLabel htmlFor="demo-name">Демо-вход (только для разработки)</FieldLabel>
+          <Input
+            id="demo-name"
+            placeholder="Имя (необязательно)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={40}
+          />
+          <FieldDescription className="text-xs">
+            Без имени — демо-аккаунт с заполненными задачами, бюджетом и группой. С именем — пустой аккаунт,
+            удобно проверять семейные группы вдвоём.
+          </FieldDescription>
+        </Field>
+        <Button
+          type="submit"
+          variant="secondary"
+          size="lg"
+          className="h-11 w-full"
+          disabled={login.isPending}
+        >
+          {login.isPending && <Spinner />}
+          Открыть демо
+        </Button>
+      </FieldGroup>
     </form>
   )
 }

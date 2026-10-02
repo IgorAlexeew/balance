@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { BellRing, Loader2 } from 'lucide-react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { BellRing } from 'lucide-react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { REMINDER_TYPES, TASK_PRIORITIES } from '@balance/contracts'
-import type { ReminderInput, ReminderType, TaskCreateInput, TaskDTO, TaskPriority } from '@balance/contracts'
+import type { TaskCreateInput, TaskDTO, TaskPriority } from '@balance/contracts'
 import { useActiveGroup } from '@/entities/family-group'
 import {
   describeOffset,
@@ -13,9 +14,9 @@ import {
   taskApi,
   taskKeys,
 } from '@/entities/task'
-import { cn } from '@/shared/lib/cn'
-import { fmtDateTime, isoToLocalInput, WEEKDAY_FULL, WEEKDAY_SHORT } from '@/shared/lib/format'
+import { fmtDateTime, WEEKDAY_FULL, WEEKDAY_SHORT } from '@/shared/lib/format'
 import { Button } from '@/shared/ui/button'
+import { DateTimePicker } from '@/shared/ui/date-picker'
 import {
   Dialog,
   DialogContent,
@@ -24,88 +25,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSeparator,
+} from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Separator } from '@/shared/ui/separator'
+import { Spinner } from '@/shared/ui/spinner'
 import { Textarea } from '@/shared/ui/textarea'
-
-type ReminderFormType = ReminderType | 'none'
-
-interface ReminderForm {
-  type: ReminderFormType
-  /** Минуты строкой — значение Select для «заранее» */
-  offset: string
-  /** HH:MM — для daily/morning/weekly */
-  time: string
-  /** 1..7 (1 = Пн) — для weekly */
-  days: number[]
-  /** Значение datetime-local — для once */
-  fireAt: string
-}
+import {
+  DEFAULT_TIME,
+  NO_ASSIGNEE,
+  NO_REMINDER,
+  taskFormDefaults,
+  taskFormSchema,
+  toTaskInput,
+  type TaskFormValues,
+} from '../model/task-form'
 
 const OFFSET_PRESETS = ['15', '30', '60', '120', '240', '1440', '2880', '10080']
-const DEFAULT_OFFSET = '60'
-const DEFAULT_TIME: Partial<Record<ReminderFormType, string>> = {
-  daily: '09:00',
-  morning: '08:00',
-  weekly: '18:00',
-}
 
-function initReminder(task: TaskDTO | null): ReminderForm {
-  const r = task?.reminder ?? null
-  const type: ReminderFormType = r?.type ?? 'none'
-  return {
-    type,
-    offset: r?.offsetMinutes != null ? String(r.offsetMinutes) : DEFAULT_OFFSET,
-    time: r?.time ?? DEFAULT_TIME[type] ?? '09:00',
-    days: r?.daysOfWeek ?? [],
-    fireAt: r?.fireAt ? isoToLocalInput(r.fireAt) : '',
-  }
-}
-
-function reminderHint(r: ReminderForm): string {
+function reminderHint(r: TaskFormValues['reminder']): string | null {
   switch (r.type) {
-    case 'none':
-      return 'Без напоминания'
     case 'at_deadline':
       return 'Напомним в момент наступления срока'
     case 'before':
       return `Напомним за ${describeOffset(Number(r.offset))} до срока`
-    case 'daily':
-      return `Каждый день в ${r.time || '—'}`
-    case 'morning':
-      return `Каждое утро в ${r.time || '—'}`
     case 'weekly':
-      return r.days.length ? `По ${describeWeekdays(r.days)} в ${r.time || '—'}` : 'Выберите дни недели'
+      return r.days.length && r.time ? `По ${describeWeekdays(r.days)} в ${r.time}` : null
     case 'once':
-      return r.fireAt ? `Один раз — ${fmtDateTime(new Date(r.fireAt).toISOString())}` : 'Укажите дату и время'
-  }
-}
-
-/** Проверка формы напоминания и сборка входа API; строка — текст ошибки */
-function buildReminder(r: ReminderForm, hasDeadline: boolean): ReminderInput | null | string {
-  switch (r.type) {
-    case 'none':
+      return r.fireAt ? `Один раз — ${fmtDateTime(new Date(r.fireAt).toISOString())}` : null
+    default:
       return null
-    case 'at_deadline':
-      return hasDeadline ? { type: 'at_deadline' } : 'Для напоминания в срок укажите срок выполнения'
-    case 'before':
-      return hasDeadline
-        ? { type: 'before', offsetMinutes: Number(r.offset) }
-        : 'Для напоминания заранее укажите срок выполнения'
-    case 'daily':
-    case 'morning':
-      return r.time ? { type: r.type, time: r.time } : 'Укажите время напоминания'
-    case 'weekly':
-      if (!r.days.length) return 'Выберите хотя бы один день недели'
-      return r.time ? { type: 'weekly', time: r.time, daysOfWeek: r.days } : 'Укажите время напоминания'
-    case 'once': {
-      if (!r.fireAt) return 'Укажите дату и время напоминания'
-      const fireAt = new Date(r.fireAt)
-      if (fireAt.getTime() <= Date.now()) return 'Время напоминания должно быть в будущем'
-      return { type: 'once', fireAt: fireAt.toISOString() }
-    }
   }
 }
 
@@ -128,12 +83,12 @@ export function TaskDialog({
   const groupId = task ? task.groupId : (activeGroup?.id ?? null)
   const members = groups.find((g) => g.id === groupId)?.members ?? []
 
-  const [title, setTitle] = useState(() => task?.title ?? '')
-  const [description, setDescription] = useState(() => task?.description ?? '')
-  const [deadline, setDeadline] = useState(() => (task?.deadline ? isoToLocalInput(task.deadline) : ''))
-  const [priority, setPriority] = useState<TaskPriority>(() => task?.priority ?? 'medium')
-  const [assigneeId, setAssigneeId] = useState<string>(() => task?.assigneeId ?? 'none')
-  const [reminder, setReminder] = useState<ReminderForm>(() => initReminder(task))
+  const form = useForm<TaskFormValues>({
+    resolver: zodResolver(taskFormSchema),
+    defaultValues: taskFormDefaults(task),
+  })
+  const reminder = useWatch({ control: form.control, name: 'reminder' })
+  const assigneeId = useWatch({ control: form.control, name: 'assigneeId' })
 
   const save = useMutation({
     mutationFn: (input: TaskCreateInput) => (task ? taskApi.update(task.id, input) : taskApi.create(input)),
@@ -145,45 +100,18 @@ export function TaskDialog({
     onError: (e: Error) => toast.error(e.message),
   })
 
-  const handleSubmit = () => {
-    const trimmedTitle = title.trim()
-    if (!trimmedTitle) {
-      toast.error('Введите название задачи')
-      return
-    }
-    const reminderInput = buildReminder(reminder, Boolean(deadline))
-    if (typeof reminderInput === 'string') {
-      toast.error(reminderInput)
-      return
-    }
-    save.mutate({
-      title: trimmedTitle,
-      description: description.trim() || null,
-      priority,
-      deadline: deadline ? new Date(deadline).toISOString() : null,
-      groupId,
-      assigneeId: groupId && assigneeId !== 'none' ? assigneeId : null,
-      reminder: reminderInput,
-    })
-  }
-
-  const setReminderField = <K extends keyof ReminderForm>(key: K, value: ReminderForm[K]) =>
-    setReminder((r) => ({ ...r, [key]: value }))
-
   const offsetOptions = OFFSET_PRESETS.includes(reminder.offset)
     ? OFFSET_PRESETS
     : [reminder.offset, ...OFFSET_PRESETS]
-
   const assigneeOptions = [
-    { value: 'none', label: 'Не назначен' },
+    { value: NO_ASSIGNEE, label: 'Не назначен' },
     ...members.map((m) => ({ value: m.userId, label: m.name ?? 'Участник' })),
   ]
-  if (assigneeId !== 'none' && !members.some((m) => m.userId === assigneeId)) {
+  if (assigneeId !== NO_ASSIGNEE && !members.some((m) => m.userId === assigneeId)) {
     assigneeOptions.push({ value: assigneeId, label: task?.assigneeName ?? 'Исполнитель' })
   }
-
-  const needsDeadline = (reminder.type === 'at_deadline' || reminder.type === 'before') && !deadline
   const showTime = reminder.type === 'daily' || reminder.type === 'morning' || reminder.type === 'weekly'
+  const hint = reminderHint(reminder)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -196,199 +124,245 @@ export function TaskDialog({
         </DialogHeader>
 
         <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            handleSubmit()
-          }}
+          noValidate
+          onSubmit={form.handleSubmit((v) => save.mutate(toTaskInput(v, groupId)))}
           className="grid gap-4"
         >
-          <div className="-mr-1 grid max-h-[60vh] gap-4 overflow-y-auto pr-1">
-            <div className="grid gap-1.5">
-              <Label htmlFor="task-title">Название</Label>
-              <Input
-                id="task-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={200}
-                placeholder="Например, оплатить квитанцию"
-                autoFocus
-              />
-            </div>
+          <FieldGroup className="-mr-1 max-h-[60vh] gap-4 overflow-y-auto pr-1">
+            <Controller
+              name="title"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="task-title">Название</FieldLabel>
+                  <Input
+                    {...field}
+                    id="task-title"
+                    maxLength={200}
+                    placeholder="Например, оплатить квитанцию"
+                    aria-invalid={fieldState.invalid}
+                    autoFocus
+                  />
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="task-description">Описание</Label>
-              <Textarea
-                id="task-description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={2000}
-                placeholder="Необязательно"
-              />
-            </div>
+            <Controller
+              name="description"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel htmlFor="task-description">Описание</FieldLabel>
+                  <Textarea
+                    {...field}
+                    id="task-description"
+                    rows={2}
+                    maxLength={2000}
+                    placeholder="Необязательно"
+                  />
+                </Field>
+              )}
+            />
 
-            <div className="grid gap-1.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <Label htmlFor="task-deadline">Срок</Label>
-                <span className="text-[11px] text-muted-foreground">Необязательно</span>
-              </div>
-              <Input
-                id="task-deadline"
-                type="datetime-local"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-              />
-            </div>
+            <Controller
+              name="deadline"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="task-deadline">Срок</FieldLabel>
+                  <DateTimePicker
+                    id="task-deadline"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Без срока"
+                    defaultTime="18:00"
+                    invalid={fieldState.invalid}
+                    clearable
+                  />
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
 
-            <div className={cn('grid gap-4', groupId && 'sm:grid-cols-2')}>
-              <div className="grid gap-1.5">
-                <Label htmlFor="task-priority">Приоритет</Label>
-                <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
-                  <SelectTrigger id="task-priority" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TASK_PRIORITIES.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {PRIORITY_LABELS[p]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className={groupId ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4'}>
+              <Controller
+                name="priority"
+                control={form.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="task-priority">Приоритет</FieldLabel>
+                    <Select value={field.value} onValueChange={(v) => field.onChange(v as TaskPriority)}>
+                      <SelectTrigger id="task-priority" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TASK_PRIORITIES.map((p) => (
+                          <SelectItem key={p} value={p}>
+                            {PRIORITY_LABELS[p]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              />
               {groupId && (
-                <div className="grid gap-1.5">
-                  <Label htmlFor="task-assignee">Исполнитель</Label>
-                  <Select value={assigneeId} onValueChange={setAssigneeId}>
-                    <SelectTrigger id="task-assignee" className="w-full">
+                <Controller
+                  name="assigneeId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel htmlFor="task-assignee">Исполнитель</FieldLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger id="task-assignee" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assigneeOptions.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>Напоминание придёт исполнителю</FieldDescription>
+                    </Field>
+                  )}
+                />
+              )}
+            </div>
+
+            <FieldSeparator />
+
+            <Controller
+              name="reminder.type"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel htmlFor="task-reminder">
+                    <BellRing className="size-4 text-primary" />
+                    Напоминание
+                  </FieldLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => {
+                      field.onChange(v)
+                      const time = DEFAULT_TIME[v]
+                      if (time) form.setValue('reminder.time', time)
+                    }}
+                  >
+                    <SelectTrigger id="task-reminder" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {assigneeOptions.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
+                      <SelectItem value={NO_REMINDER}>Без напоминания</SelectItem>
+                      {REMINDER_TYPES.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {REMINDER_TYPE_LABELS[t]}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                  {hint && <FieldDescription>{hint}</FieldDescription>}
+                </Field>
               )}
-            </div>
+            />
 
-            <Separator />
-            <div className="grid gap-3">
-              <div className="flex items-center gap-2">
-                <BellRing className="size-4 text-primary" />
-                <Label htmlFor="task-reminder">Напоминание</Label>
-              </div>
+            {reminder.type === 'before' && (
+              <Controller
+                name="reminder.offset"
+                control={form.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="task-reminder-offset">За сколько напомнить</FieldLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="task-reminder-offset" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {offsetOptions.map((o) => (
+                          <SelectItem key={o} value={o}>
+                            За {describeOffset(Number(o))}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              />
+            )}
 
-              <Select
-                value={reminder.type}
-                onValueChange={(v) => {
-                  const type = v as ReminderFormType
-                  setReminder((r) => ({ ...r, type, time: DEFAULT_TIME[type] ?? r.time }))
-                }}
-              >
-                <SelectTrigger id="task-reminder" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Без напоминания</SelectItem>
-                  {REMINDER_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {REMINDER_TYPE_LABELS[t]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {reminder.type === 'weekly' && (
+              <Controller
+                name="reminder.days"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel>Дни недели</FieldLabel>
+                    <div className="grid grid-cols-7 justify-items-center gap-1">
+                      {WEEKDAY_SHORT.map((label, i) => {
+                        const day = i + 1
+                        const active = field.value.includes(day)
+                        return (
+                          <Button
+                            key={day}
+                            type="button"
+                            variant={active ? 'default' : 'outline'}
+                            size="icon"
+                            aria-pressed={active}
+                            aria-label={WEEKDAY_FULL[i]}
+                            className="rounded-lg text-xs"
+                            onClick={() =>
+                              field.onChange(
+                                active ? field.value.filter((d) => d !== day) : [...field.value, day],
+                              )
+                            }
+                          >
+                            {label}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+            )}
 
-              {reminder.type === 'before' && (
-                <div className="grid gap-1.5">
-                  <Label htmlFor="task-reminder-offset" className="text-xs text-muted-foreground">
-                    За сколько напомнить
-                  </Label>
-                  <Select value={reminder.offset} onValueChange={(v) => setReminderField('offset', v)}>
-                    <SelectTrigger id="task-reminder-offset" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {offsetOptions.map((o) => (
-                        <SelectItem key={o} value={o}>
-                          За {describeOffset(Number(o))}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+            {showTime && (
+              <Controller
+                name="reminder.time"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="task-reminder-time">Время</FieldLabel>
+                    <Input {...field} id="task-reminder-time" type="time" aria-invalid={fieldState.invalid} />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+            )}
 
-              {reminder.type === 'weekly' && (
-                <div className="grid gap-1.5">
-                  <Label className="text-xs text-muted-foreground">Дни недели</Label>
-                  <div className="grid grid-cols-7 justify-items-center gap-1">
-                    {WEEKDAY_SHORT.map((label, i) => {
-                      const day = i + 1
-                      const active = reminder.days.includes(day)
-                      return (
-                        <Button
-                          key={day}
-                          type="button"
-                          variant={active ? 'default' : 'outline'}
-                          size="icon"
-                          aria-pressed={active}
-                          aria-label={WEEKDAY_FULL[i]}
-                          className="rounded-lg text-xs"
-                          onClick={() =>
-                            setReminderField(
-                              'days',
-                              active ? reminder.days.filter((d) => d !== day) : [...reminder.days, day],
-                            )
-                          }
-                        >
-                          {label}
-                        </Button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {showTime && (
-                <div className="grid gap-1.5">
-                  <Label htmlFor="task-reminder-time" className="text-xs text-muted-foreground">
-                    Время
-                  </Label>
-                  <Input
-                    id="task-reminder-time"
-                    type="time"
-                    value={reminder.time}
-                    onChange={(e) => setReminderField('time', e.target.value)}
-                  />
-                </div>
-              )}
-
-              {reminder.type === 'once' && (
-                <div className="grid gap-1.5">
-                  <Label htmlFor="task-reminder-fire-at" className="text-xs text-muted-foreground">
-                    Дата и время
-                  </Label>
-                  <Input
-                    id="task-reminder-fire-at"
-                    type="datetime-local"
-                    value={reminder.fireAt}
-                    onChange={(e) => setReminderField('fireAt', e.target.value)}
-                  />
-                </div>
-              )}
-
-              {needsDeadline && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">Укажите срок выполнения выше</p>
-              )}
-              {reminder.type !== 'none' && (
-                <p className="text-xs text-muted-foreground">{reminderHint(reminder)}</p>
-              )}
-            </div>
-          </div>
+            {reminder.type === 'once' && (
+              <Controller
+                name="reminder.fireAt"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="task-reminder-fire-at">Когда напомнить</FieldLabel>
+                    <DateTimePicker
+                      id="task-reminder-fire-at"
+                      value={field.value}
+                      onChange={field.onChange}
+                      invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
+            )}
+          </FieldGroup>
 
           <DialogFooter>
             <Button
@@ -400,7 +374,7 @@ export function TaskDialog({
               Отмена
             </Button>
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending && <Loader2 className="size-4 animate-spin" />}
+              {save.isPending && <Spinner />}
               {task ? 'Сохранить' : 'Создать'}
             </Button>
           </DialogFooter>

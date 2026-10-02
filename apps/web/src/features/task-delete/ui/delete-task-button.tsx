@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { TaskDTO } from '@balance/contracts'
 import { taskApi, taskKeys } from '@/entities/task'
 import { Button } from '@/shared/ui/button'
+import { Spinner } from '@/shared/ui/spinner'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 
 export function DeleteTaskButton({ task }: { task: TaskDTO }) {
@@ -30,7 +31,7 @@ export function DeleteTaskButton({ task }: { task: TaskDTO }) {
           aria-label={`Удалить задачу «${task.title}»`}
           disabled={remove.isPending}
         >
-          {remove.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+          {remove.isPending ? <Spinner className="size-3.5" /> : <Trash2 className="size-3.5" />}
         </Button>
       }
     />

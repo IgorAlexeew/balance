@@ -6,11 +6,11 @@
 
 Монорепозиторий на **pnpm workspaces + Turborepo**:
 
-| Пакет                                       | Что внутри                                                                     |
-| ------------------------------------------- | ------------------------------------------------------------------------------ |
-| `apps/api` (`@balance/api`)                 | Бэкенд: Hono + Prisma (SQLite), авторизация, планировщик напоминаний           |
-| `apps/web` (`@balance/web`)                 | Фронтенд: React 19 + Vite + React Router + TanStack Query, архитектура **FSD** |
-| `packages/contracts` (`@balance/contracts`) | Общие zod-схемы и DTO — единый контракт API для фронта и бэка                  |
+| Пакет                                       | Что внутри                                                                                      |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/api` (`@balance/api`)                 | Бэкенд: NestJS (Express) + Prisma (SQLite), авторизация, планировщик напоминаний                |
+| `apps/web` (`@balance/web`)                 | Фронтенд: React 19 + Vite + React Router + TanStack Query, UI на shadcn/ui, архитектура **FSD** |
+| `packages/contracts` (`@balance/contracts`) | Общие zod-схемы и DTO — единый контракт API для фронта и бэка (для API собирается в CJS)        |
 
 ### Фронтенд: Feature-Sliced Design
 
@@ -21,15 +21,23 @@ apps/web/src
 ├── widgets/    # крупные блоки: каркас приложения, графики бюджета, сетка календаря…
 ├── features/   # действия пользователя: редактирование задачи, вход, вступление в группу…
 ├── entities/   # сущности: session, task, transaction, event, family-group, notification
-└── shared/     # ui-кит (shadcn/ui), http-клиент, форматирование, конфиг
+└── shared/     # ui-кит (shadcn/ui new-york-v4), http-клиент, форматирование, конфиг
 ```
 
 Правила: слой импортирует только нижележащие слои, а слайсы — только через публичный
 `index.ts`. Это проверяет [steiger](https://github.com/feature-sliced/steiger) в `pnpm lint`.
 
-### Бэкенд
+Формы — `react-hook-form` + zod + компоненты `Field` из shadcn; даты — `DatePicker`/`DateTimePicker`
+на `Calendar` (react-day-picker). Компоненты shadcn лежат в `shared/ui` и обновляются из
+[исходников new-york-v4](https://github.com/shadcn-ui/ui/tree/main/apps/v4/registry/new-york-v4/ui)
+или через `pnpm dlx shadcn@latest add <component> --overwrite` (из `apps/web`).
 
-- Модули по доменам в `apps/api/src/modules/*`, вход валидируется схемами из `@balance/contracts`.
+### Бэкенд (NestJS)
+
+- Модули по доменам в `apps/api/src/modules/*`: контроллер → сервис → `PrismaService`.
+- Вход валидируется zod-схемами из `@balance/contracts` через `ZodPipe`; ошибки — `{ error }` из глобального фильтра.
+- Глобальные guards: `CsrfGuard` и `SessionGuard` (`@Public()` — открытый эндпоинт, `@CurrentUser()` — пользователь).
+- Фоновые задачи — `@nestjs/schedule`, лимиты — `@nestjs/throttler`; сборка — Nest CLI + SWC.
 - Сессии хранятся в БД (в cookie — случайный токен, в базе — его SHA-256), cookie `httpOnly` + `SameSite=Lax`.
 - CSRF: изменяющие запросы принимаются только с `Origin` фронтенда и только как `application/json`.
 - Деньги — целые копейки, даты операций — `YYYY-MM-DD`.
@@ -94,7 +102,7 @@ DATABASE_URL="file:/data/lifebalance.db" \
 APP_URL="https://lifebalance.example.ru" \
 WEB_DIST_DIR="../web/dist" \
 YANDEX_CLIENT_ID=… YANDEX_CLIENT_SECRET=… \
-node dist/index.js
+node dist/main.js
 ```
 
 С `WEB_DIST_DIR` API сам отдаёт собранный фронтенд (SPA), так что достаточно одного процесса

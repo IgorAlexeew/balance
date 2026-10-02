@@ -9,7 +9,8 @@ import { TaskDialog } from '@/features/task-edit'
 import { TaskCard } from '@/widgets/task-list'
 import { useDialogState } from '@/shared/lib/use-dialog-state'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent } from '@/shared/ui/card'
+import { Card } from '@/shared/ui/card'
+import { EmptyState } from '@/shared/ui/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
@@ -79,15 +80,17 @@ export function TasksPage() {
         </div>
       ) : tasks.length === 0 ? (
         <Card className="rounded-xl border py-0 shadow-sm">
-          <CardContent className="py-12 text-center">
-            <empty.icon className="mx-auto mb-2 size-10 text-muted-foreground/30" />
-            <p className="text-sm font-medium">{empty.title}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{empty.hint}</p>
-            <Button size="sm" variant="outline" className="mt-4 gap-1.5" onClick={() => dialog.openWith()}>
-              <Plus className="size-3.5" />
-              Создать задачу
-            </Button>
-          </CardContent>
+          <EmptyState
+            icon={empty.icon}
+            title={empty.title}
+            description={empty.hint}
+            action={
+              <Button size="sm" variant="outline" onClick={() => dialog.openWith()}>
+                <Plus className="size-3.5" />
+                Создать задачу
+              </Button>
+            }
+          />
         </Card>
       ) : (
         <motion.div

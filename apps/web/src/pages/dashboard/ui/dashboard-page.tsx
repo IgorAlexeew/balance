@@ -29,6 +29,7 @@ import { currentMonth, fmtTime, formatMoney, greeting, todayTitle } from '@/shar
 import { useDialogState } from '@/shared/lib/use-dialog-state'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { EmptyState } from '@/shared/ui/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 
 const fadeUp = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
@@ -102,15 +103,6 @@ function Section(props: {
         <CardContent className="pb-4">{children}</CardContent>
       </Card>
     </motion.div>
-  )
-}
-
-function EmptyState({ icon: Icon, text }: { icon: typeof ListTodo; text: string }) {
-  return (
-    <div className="py-8 text-center">
-      <Icon className="mx-auto mb-2 size-10 text-muted-foreground/30" />
-      <p className="text-sm text-muted-foreground">{text}</p>
-    </div>
   )
 }
 
@@ -243,7 +235,11 @@ export function DashboardPage() {
           {tasksQuery.isLoading ? (
             <ListSkeleton />
           ) : todayTasks.length === 0 ? (
-            <EmptyState icon={CheckCircle2} text="На сегодня задач нет — свободный день!" />
+            <EmptyState
+              className="p-4 md:p-4"
+              icon={CheckCircle2}
+              title="На сегодня задач нет — свободный день!"
+            />
           ) : (
             <div className="divide-y">
               {todayTasks.map((t) => (
@@ -261,7 +257,7 @@ export function DashboardPage() {
           {eventsQuery.isLoading ? (
             <ListSkeleton />
           ) : events.length === 0 ? (
-            <EmptyState icon={CalendarDays} text="Событий на две недели вперёд нет" />
+            <EmptyState className="p-4 md:p-4" icon={CalendarDays} title="Событий на две недели вперёд нет" />
           ) : (
             <div className="max-h-72 divide-y overflow-y-auto">
               {events.slice(0, 5).map((e) => {
@@ -302,7 +298,7 @@ export function DashboardPage() {
           {transactionsQuery.isLoading ? (
             <ListSkeleton />
           ) : recentTransactions.length === 0 ? (
-            <EmptyState icon={Wallet} text="В этом месяце записей пока нет" />
+            <EmptyState className="p-4 md:p-4" icon={Wallet} title="В этом месяце записей пока нет" />
           ) : (
             <div className="max-h-72 divide-y overflow-y-auto">
               {recentTransactions.map((t) => (

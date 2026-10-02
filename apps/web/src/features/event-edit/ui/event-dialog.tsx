@@ -1,19 +1,18 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { format, parseISO } from 'date-fns'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
-import {
-  EVENT_COLORS,
-  type CalendarEventDTO,
-  type EventColor,
-  type EventCreateInput,
-} from '@balance/contracts'
+import { z } from 'zod'
+import { EVENT_COLORS, type CalendarEventDTO, type EventCreateInput } from '@balance/contracts'
 import { EVENT_COLOR_CLASSES, eventApi, eventKeys } from '@/entities/event'
 import { useActiveGroup } from '@/entities/family-group'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
+import { DatePicker, DateTimePicker } from '@/shared/ui/date-picker'
 import {
   Dialog,
   DialogContent,
@@ -22,40 +21,58 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/shared/ui/field'
 import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
+import { Spinner } from '@/shared/ui/spinner'
 import { Switch } from '@/shared/ui/switch'
 import { Textarea } from '@/shared/ui/textarea'
 
-interface EventFormValues {
-  title: string
-  description: string
-  allDay: boolean
-  color: EventColor
-  startValue: string
-  endValue: string
+/** «Весь день» храним как локальные 00:00 — 23:59 соответствующих дат */
+function toRange(v: { allDay: boolean; start: string; end: string }) {
+  const start = v.allDay ? new Date(`${v.start.slice(0, 10)}T00:00`) : new Date(v.start)
+  const end = v.allDay ? new Date(`${v.end.slice(0, 10)}T23:59`) : new Date(v.end)
+  return { start, end }
 }
 
-/** Начальные значения формы: из события при редактировании, иначе defaultDate (или сегодня) 18:00–19:00 */
-function getInitialValues(event: CalendarEventDTO | null, defaultDate: Date | null): EventFormValues {
+const formSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Введите название события').max(200),
+    description: z.string().max(2000),
+    allDay: z.boolean(),
+    color: z.enum(EVENT_COLORS),
+    start: z.string().min(1, 'Укажите начало'),
+    end: z.string().min(1, 'Укажите окончание'),
+  })
+  .refine(
+    (v) => {
+      const { start, end } = toRange(v)
+      return end.getTime() > start.getTime()
+    },
+    { path: ['end'], message: 'Окончание должно быть позже начала' },
+  )
+type FormValues = z.infer<typeof formSchema>
+
+const LOCAL_DT = "yyyy-MM-dd'T'HH:mm"
+
+function defaults(event: CalendarEventDTO | null, defaultDate: Date | null): FormValues {
   if (event) {
     return {
       title: event.title,
       description: event.description ?? '',
       allDay: event.allDay,
       color: event.color,
-      startValue: format(parseISO(event.start), event.allDay ? 'yyyy-MM-dd' : "yyyy-MM-dd'T'HH:mm"),
-      endValue: format(parseISO(event.end), event.allDay ? 'yyyy-MM-dd' : "yyyy-MM-dd'T'HH:mm"),
+      start: format(parseISO(event.start), LOCAL_DT),
+      end: format(parseISO(event.end), LOCAL_DT),
     }
   }
-  const dayStr = format(defaultDate ?? new Date(), 'yyyy-MM-dd')
+  const day = format(defaultDate ?? new Date(), 'yyyy-MM-dd')
   return {
     title: '',
     description: '',
     allDay: false,
     color: 'emerald',
-    startValue: `${dayStr}T18:00`,
-    endValue: `${dayStr}T19:00`,
+    start: `${day}T18:00`,
+    end: `${day}T19:00`,
   }
 }
 
@@ -73,15 +90,13 @@ export function EventDialog({
   const queryClient = useQueryClient()
   const { groupId: activeGroupId } = useActiveGroup()
   const groupId = event ? event.groupId : activeGroupId
-
-  const initial = getInitialValues(event, defaultDate)
-  const [title, setTitle] = useState(initial.title)
-  const [description, setDescription] = useState(initial.description)
-  const [allDay, setAllDay] = useState(initial.allDay)
-  const [color, setColor] = useState<EventColor>(initial.color)
-  const [startValue, setStartValue] = useState(initial.startValue)
-  const [endValue, setEndValue] = useState(initial.endValue)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: defaults(event, defaultDate),
+  })
+  const allDay = useWatch({ control: form.control, name: 'allDay' })
 
   const save = useMutation({
     mutationFn: ({ groupId: targetGroupId, ...input }: EventCreateInput) =>
@@ -95,67 +110,56 @@ export function EventDialog({
   })
 
   const remove = useMutation({
-    mutationFn: () => {
-      if (!event) throw new Error('Событие не найдено')
-      return eventApi.remove(event.id)
-    },
+    mutationFn: () => eventApi.remove(event!.id),
     onSuccess: () => {
       toast.success('Событие удалено')
-      setConfirmDelete(false)
       onOpenChange(false)
       void queryClient.invalidateQueries({ queryKey: eventKeys.all })
     },
-    onError: (e: Error) => {
-      setConfirmDelete(false)
-      toast.error(e.message)
-    },
+    onError: (e: Error) => toast.error(e.message),
   })
 
-  function handleAllDayChange(checked: boolean) {
-    setAllDay(checked)
-    if (checked) {
-      // на «весь день» остаётся только дата
-      setStartValue((v) => v.slice(0, 10))
-      setEndValue((v) => v.slice(0, 10))
-    } else {
-      // обратно к времени: 18:00–19:00 соответствующих дат
-      setStartValue((v) => `${v.slice(0, 10)}T18:00`)
-      setEndValue((v) => `${v.slice(0, 10)}T19:00`)
-    }
-  }
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const trimmedTitle = title.trim()
-    if (!trimmedTitle) {
-      toast.error('Введите название события')
-      return
-    }
-    if (!startValue || !endValue) {
-      toast.error('Укажите начало и окончание события')
-      return
-    }
-    // «Весь день» храним как дату T00:00 — T23:59 (локальное время)
-    const start = allDay ? new Date(`${startValue}T00:00`) : new Date(startValue)
-    const end = allDay ? new Date(`${endValue}T23:59`) : new Date(endValue)
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      toast.error('Проверьте корректность дат события')
-      return
-    }
-    if (end.getTime() <= start.getTime()) {
-      toast.error('Окончание не может быть раньше начала')
-      return
-    }
+  const submit = (v: FormValues) => {
+    const { start, end } = toRange(v)
     save.mutate({
-      title: trimmedTitle,
-      description: description.trim() || null,
+      title: v.title.trim(),
+      description: v.description.trim() || null,
       start: start.toISOString(),
       end: end.toISOString(),
-      allDay,
-      color,
+      allDay: v.allDay,
+      color: v.color,
       groupId,
     })
   }
+
+  const dateField = (name: 'start' | 'end', label: string) => (
+    <Controller
+      name={name}
+      control={form.control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel htmlFor={`event-${name}`}>{label}</FieldLabel>
+          {allDay ? (
+            <DatePicker
+              id={`event-${name}`}
+              value={field.value.slice(0, 10)}
+              onChange={(d) => field.onChange(d ? `${d}${field.value.slice(10) || 'T00:00'}` : '')}
+              invalid={fieldState.invalid}
+            />
+          ) : (
+            <DateTimePicker
+              id={`event-${name}`}
+              value={field.value}
+              onChange={field.onChange}
+              defaultTime={name === 'start' ? '18:00' : '19:00'}
+              invalid={fieldState.invalid}
+            />
+          )}
+          <FieldError errors={[fieldState.error]} />
+        </Field>
+      )}
+    />
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -163,83 +167,93 @@ export function EventDialog({
         <DialogHeader>
           <DialogTitle>{event ? 'Редактирование события' : 'Новое событие'}</DialogTitle>
           <DialogDescription>
-            {groupId ? 'Событие будет доступно всем членам группы.' : 'Личное событие — видно только вам.'}
+            {groupId
+              ? 'Событие будет доступно всем участникам группы.'
+              : 'Личное событие — видно только вам.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-1.5">
-            <Label htmlFor="event-title">
-              Название <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="event-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={200}
-              placeholder="Например, ужин с семьёй"
+        <form noValidate className="grid gap-4" onSubmit={form.handleSubmit(submit)}>
+          <FieldGroup className="gap-4">
+            <Controller
+              name="title"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="event-title">Название</FieldLabel>
+                  <Input
+                    {...field}
+                    id="event-title"
+                    maxLength={200}
+                    placeholder="Например, ужин с семьёй"
+                    aria-invalid={fieldState.invalid}
+                    autoFocus
+                  />
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
             />
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="event-description">Описание</Label>
-            <Textarea
-              id="event-description"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={2000}
-              placeholder="Необязательные подробности"
+            <Controller
+              name="description"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel htmlFor="event-description">Описание</FieldLabel>
+                  <Textarea
+                    {...field}
+                    id="event-description"
+                    rows={2}
+                    maxLength={2000}
+                    placeholder="Необязательно"
+                  />
+                </Field>
+              )}
             />
-          </div>
 
-          <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
-            <Label htmlFor="event-all-day" className="cursor-pointer">
-              Весь день
-            </Label>
-            <Switch id="event-all-day" checked={allDay} onCheckedChange={handleAllDayChange} />
-          </div>
+            <Controller
+              name="allDay"
+              control={form.control}
+              render={({ field }) => (
+                <Field orientation="horizontal" className="rounded-lg border px-3 py-2.5">
+                  <FieldLabel htmlFor="event-all-day" className="flex-1 cursor-pointer">
+                    Весь день
+                  </FieldLabel>
+                  <Switch id="event-all-day" checked={field.value} onCheckedChange={field.onChange} />
+                </Field>
+              )}
+            />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="event-start">Начало</Label>
-              <Input
-                id="event-start"
-                type={allDay ? 'date' : 'datetime-local'}
-                value={startValue}
-                onChange={(e) => setStartValue(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="event-end">Окончание</Label>
-              <Input
-                id="event-end"
-                type={allDay ? 'date' : 'datetime-local'}
-                value={endValue}
-                onChange={(e) => setEndValue(e.target.value)}
-              />
-            </div>
-          </div>
+            {dateField('start', 'Начало')}
+            {dateField('end', 'Окончание')}
 
-          <div className="space-y-1.5">
-            <Label>Цвет</Label>
-            <div className="flex items-center gap-2.5">
-              {EVENT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  aria-label={`Цвет: ${EVENT_COLOR_CLASSES[c].title}`}
-                  aria-pressed={color === c}
-                  className={cn(
-                    'size-7 rounded-full transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                    color === c && 'scale-110 ring-2 ring-ring ring-offset-2 ring-offset-background',
-                  )}
-                  style={{ backgroundColor: EVENT_COLOR_CLASSES[c].hex }}
-                />
-              ))}
-            </div>
-          </div>
+            <Controller
+              name="color"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>Цвет</FieldLabel>
+                  <div className="flex items-center gap-2.5">
+                    {EVENT_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => field.onChange(c)}
+                        aria-label={`Цвет: ${EVENT_COLOR_CLASSES[c].title}`}
+                        aria-pressed={field.value === c}
+                        className={cn(
+                          'size-7 rounded-full transition-transform hover:scale-110 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
+                          field.value === c &&
+                            'scale-110 ring-2 ring-ring ring-offset-2 ring-offset-background',
+                        )}
+                        style={{ backgroundColor: EVENT_COLOR_CLASSES[c].hex }}
+                      />
+                    ))}
+                  </div>
+                </Field>
+              )}
+            />
+          </FieldGroup>
 
           <DialogFooter>
             {event && (
@@ -256,11 +270,7 @@ export function EventDialog({
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive sm:mr-auto"
                     disabled={remove.isPending}
                   >
-                    {remove.isPending ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="size-4" />
-                    )}
+                    {remove.isPending ? <Spinner /> : <Trash2 className="size-4" />}
                     Удалить
                   </Button>
                 }
@@ -275,7 +285,7 @@ export function EventDialog({
               Отмена
             </Button>
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending && <Loader2 className="size-4 animate-spin" />}
+              {save.isPending && <Spinner />}
               {event ? 'Сохранить' : 'Создать'}
             </Button>
           </DialogFooter>

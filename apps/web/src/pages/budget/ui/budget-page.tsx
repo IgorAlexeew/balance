@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Plus, TrendingDown, TrendingUp, User, Users, Wallet } from 'lucide-react'
+import { Plus, TrendingDown, TrendingUp, User, Users, Wallet } from 'lucide-react'
 import type { TransactionDTO } from '@balance/contracts'
 import { useActiveGroup } from '@/entities/family-group'
 import { useBudgetSummary, useTransactions } from '@/entities/transaction'
@@ -12,6 +12,7 @@ import { currentMonth, formatMoney, monthTitle, shiftMonth } from '@/shared/lib/
 import { useDialogState } from '@/shared/lib/use-dialog-state'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
+import { MonthSwitcher } from '@/shared/ui/month-switcher'
 import { Skeleton } from '@/shared/ui/skeleton'
 
 function SummaryCard({
@@ -75,30 +76,12 @@ export function BudgetPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5">
-        <Button
-          variant="outline"
-          size="icon"
-          className="size-8"
-          aria-label="Предыдущий месяц"
-          onClick={() => setMonth((m) => shiftMonth(m, -1))}
-        >
-          <ChevronLeft className="size-4" />
-        </Button>
-        <div className="min-w-40 text-center text-sm font-semibold">{monthTitle(month)}</div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="size-8"
-          aria-label="Следующий месяц"
-          onClick={() => setMonth((m) => shiftMonth(m, 1))}
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => setMonth(currentMonth())}>
-          Сегодня
-        </Button>
-      </div>
+      <MonthSwitcher
+        label={monthTitle(month)}
+        onPrev={() => setMonth((m) => shiftMonth(m, -1))}
+        onNext={() => setMonth((m) => shiftMonth(m, 1))}
+        onToday={() => setMonth(currentMonth())}
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <SummaryCard

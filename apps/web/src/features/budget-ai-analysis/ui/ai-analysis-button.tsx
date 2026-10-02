@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import Markdown from 'react-markdown'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useAppConfig } from '@/entities/session'
 import { transactionApi } from '@/entities/transaction'
 import { monthTitle } from '@/shared/lib/format'
 import { Button } from '@/shared/ui/button'
+import { Spinner } from '@/shared/ui/spinner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 
 /** ИИ-анализ покупок за месяц; скрыт, если провайдер не настроен на сервере */
@@ -56,7 +57,7 @@ export function AiAnalysisButton({
           <div className="max-h-[70vh] overflow-y-auto pr-1">
             {analysis.isPending ? (
               <div className="flex flex-col items-center gap-3 py-14 text-muted-foreground">
-                <Loader2 className="size-8 animate-spin text-primary" />
+                <Spinner className="size-8 text-primary" />
                 <p className="text-sm">Анализируем покупки, это займёт до минуты…</p>
               </div>
             ) : analysis.data ? (

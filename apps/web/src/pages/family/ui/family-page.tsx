@@ -10,6 +10,7 @@ import { fmtDate, plural } from '@/shared/lib/format'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
+import { EmptyState } from '@/shared/ui/empty-state'
 import { Separator } from '@/shared/ui/separator'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -112,15 +113,12 @@ export function FamilyPage() {
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <Card className="rounded-xl border shadow-sm">
-          <CardContent className="py-10 text-center">
-            <Users className="mx-auto mb-3 size-12 text-muted-foreground/30" />
-            <p className="text-base font-medium">У вас пока нет семейных групп</p>
-            <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-              Создайте группу и поделитесь кодом приглашения с близкими — они увидят общие задачи, бюджет и
-              календарь.
-            </p>
-          </CardContent>
+        <Card className="rounded-xl border py-0 shadow-sm">
+          <EmptyState
+            icon={Users}
+            title="У вас пока нет семейных групп"
+            description="Создайте группу и поделитесь кодом приглашения с близкими — они увидят общие задачи, бюджет и календарь."
+          />
         </Card>
       ) : (
         <div className="grid items-start gap-4 md:grid-cols-2">

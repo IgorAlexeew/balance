@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { INVITE_CODE_LENGTH } from '@balance/contracts'
 import { familyApi, familyKeys, useActiveGroupStore } from '@/entities/family-group'
 import { Button } from '@/shared/ui/button'
+import { Spinner } from '@/shared/ui/spinner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 
@@ -59,7 +60,7 @@ export function JoinGroupCard() {
             className="w-full gap-1.5"
             disabled={code.length < MIN_CODE_LENGTH || join.isPending}
           >
-            {join.isPending ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+            {join.isPending ? <Spinner /> : <UserPlus className="size-4" />}
             Вступить
           </Button>
         </form>

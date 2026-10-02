@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { addMonths, format, subMonths } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { CalendarEventDTO } from '@balance/contracts'
 import { useActiveGroup } from '@/entities/family-group'
 import { EventDialog } from '@/features/event-edit'
 import { CalendarMonth } from '@/widgets/calendar-month'
 import { Button } from '@/shared/ui/button'
+import { MonthSwitcher } from '@/shared/ui/month-switcher'
 
 export function CalendarPage() {
   const { groupId, group } = useActiveGroup()
@@ -36,32 +37,12 @@ export function CalendarPage() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Предыдущий месяц"
-            onClick={() => setAnchor((a) => subMonths(a, 1))}
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <div className="min-w-[176px] text-center text-base font-semibold capitalize select-none">
-            {format(anchor, 'LLLL yyyy', { locale: ru })}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Следующий месяц"
-            onClick={() => setAnchor((a) => addMonths(a, 1))}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setAnchor(new Date())}>
-          Сегодня
-        </Button>
-      </div>
+      <MonthSwitcher
+        label={format(anchor, 'LLLL yyyy', { locale: ru })}
+        onPrev={() => setAnchor((a) => subMonths(a, 1))}
+        onNext={() => setAnchor((a) => addMonths(a, 1))}
+        onToday={() => setAnchor(new Date())}
+      />
 
       <CalendarMonth
         anchor={anchor}
