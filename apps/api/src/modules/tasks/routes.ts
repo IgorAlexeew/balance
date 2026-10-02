@@ -25,7 +25,8 @@ async function getAccessibleTask(userId: string, id: string) {
 
 async function assertAssignable(groupId: string | null, assigneeId: string) {
   if (!groupId) throw badRequest('Назначить исполнителя можно только в семейной группе')
-  if (!(await isGroupMember(assigneeId, groupId))) throw badRequest('Исполнитель не является участником группы')
+  if (!(await isGroupMember(assigneeId, groupId)))
+    throw badRequest('Исполнитель не является участником группы')
 }
 
 function needsDeadline(type: string | undefined) {

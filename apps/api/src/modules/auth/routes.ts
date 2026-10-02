@@ -1,11 +1,12 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { Hono } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
-import { demoLoginSchema, type AppConfigDTO } from '@balance/contracts'
+import { demoLoginSchema, type AppConfigDTO, type SessionDTO } from '@balance/contracts'
 import { prisma } from '../../db'
 import { notFound } from '../../lib/errors'
 import { validate } from '../../lib/validate'
 import { ensureDemoUser } from '../../seed/demo'
+import { userToDTO } from '../me/routes'
 import type { AppEnv } from '../../types'
 import { createSession, destroySession, resolveSession } from './sessions'
 import { buildAuthorizeUrl, fetchYandexProfile } from './yandex'
@@ -21,6 +22,13 @@ authRoutes.get('/config', (c) => {
     auth: { yandex: config.yandex !== null, demo: config.demoLogin },
     features: { aiAnalysis: config.ai !== null },
   }
+  return c.json(body)
+})
+
+/** Текущая сессия; для гостя — user: null (без 401, чтобы не шуметь в консоли) */
+authRoutes.get('/session', async (c) => {
+  const resolved = await resolveSession(c, c.get('config'))
+  const body: SessionDTO = { user: resolved ? userToDTO(resolved.user) : null }
   return c.json(body)
 })
 

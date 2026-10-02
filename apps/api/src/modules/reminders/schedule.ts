@@ -57,7 +57,11 @@ export function computeNextFireAt(rule: ReminderRule, ctx: ScheduleContext): Dat
   }
 }
 
-function nextWallClockOccurrence(time: string | null, days: number[] | null, ctx: ScheduleContext): Date | null {
+function nextWallClockOccurrence(
+  time: string | null,
+  days: number[] | null,
+  ctx: ScheduleContext,
+): Date | null {
   if (!time || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null
   // Сегодняшняя дата по часам получателя
   const [y, m, d] = formatInTimeZone(ctx.after, ctx.timezone, 'yyyy-MM-dd').split('-').map(Number) as [

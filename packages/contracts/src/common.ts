@@ -9,7 +9,9 @@ export const isoDateTimeSchema = z.iso.datetime({ offset: true, error: 'Неко
 export const localDateSchema = z.iso.date({ error: 'Некорректная дата (ожидается ГГГГ-ММ-ДД)' })
 
 /** Месяц YYYY-MM */
-export const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Некорректный месяц (ожидается ГГГГ-ММ)')
+export const monthSchema = z
+  .string()
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Некорректный месяц (ожидается ГГГГ-ММ)')
 
 /** Время суток HH:MM */
 export const timeOfDaySchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Укажите время в формате ЧЧ:ММ')

@@ -41,7 +41,12 @@ describe('budget', () => {
 
     await a.post('/transactions', { type: 'expense', amount: 10, category: 'Продукты', date: '2026-10-01' })
     await a.post('/transactions', { type: 'expense', amount: 20, category: 'Продукты', date: '2026-10-31' })
-    await a.post('/transactions', { type: 'income', amount: 100_000, category: 'Зарплата', date: '2026-10-15' })
+    await a.post('/transactions', {
+      type: 'income',
+      amount: 100_000,
+      category: 'Зарплата',
+      date: '2026-10-15',
+    })
     await a.post('/transactions', { type: 'expense', amount: 999, category: 'Продукты', date: '2026-11-01' })
     await b.post('/transactions', { type: 'expense', amount: 777, category: 'Продукты', date: '2026-10-05' })
 
@@ -60,9 +65,19 @@ describe('budget', () => {
     const app = testApp()
     const anna = await createUser('Anna')
     const a = await clientFor(app, anna.id)
-    const fractional = await a.post('/transactions', { type: 'expense', amount: 10.5, category: 'X', date: '2026-10-01' })
+    const fractional = await a.post('/transactions', {
+      type: 'expense',
+      amount: 10.5,
+      category: 'X',
+      date: '2026-10-01',
+    })
     expect(fractional.status).toBe(400)
-    const badDate = await a.post('/transactions', { type: 'expense', amount: 10, category: 'X', date: '2026-02-31' })
+    const badDate = await a.post('/transactions', {
+      type: 'expense',
+      amount: 10,
+      category: 'X',
+      date: '2026-02-31',
+    })
     expect(badDate.status).toBe(400)
   })
 

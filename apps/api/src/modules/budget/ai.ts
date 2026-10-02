@@ -6,7 +6,10 @@ interface ChatMessage {
 }
 
 /** Вызов любого OpenAI-совместимого Chat Completions API */
-export async function chatCompletion(ai: NonNullable<AppConfig['ai']>, messages: ChatMessage[]): Promise<string> {
+export async function chatCompletion(
+  ai: NonNullable<AppConfig['ai']>,
+  messages: ChatMessage[],
+): Promise<string> {
   const res = await fetch(`${ai.url}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ai.apiKey}` },

@@ -1,4 +1,6 @@
+import { randomInt } from 'node:crypto'
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz'
+import { INVITE_CODE_ALPHABET, INVITE_CODE_LENGTH } from '@balance/contracts'
 import type { Prisma, User } from '@prisma/client'
 import { prisma } from '../db'
 import { rescheduleTaskReminder } from '../modules/reminders/service'
@@ -11,9 +13,39 @@ import { rescheduleTaskReminder } from '../modules/reminders/service'
 const DEMO_EMAIL = 'demo@lifebalance.local'
 
 const TRANSLIT: Record<string, string> = {
-  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k',
-  л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts',
-  ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+  а: 'a',
+  б: 'b',
+  в: 'v',
+  г: 'g',
+  д: 'd',
+  е: 'e',
+  ё: 'e',
+  ж: 'zh',
+  з: 'z',
+  и: 'i',
+  й: 'y',
+  к: 'k',
+  л: 'l',
+  м: 'm',
+  н: 'n',
+  о: 'o',
+  п: 'p',
+  р: 'r',
+  с: 's',
+  т: 't',
+  у: 'u',
+  ф: 'f',
+  х: 'h',
+  ц: 'ts',
+  ч: 'ch',
+  ш: 'sh',
+  щ: 'sch',
+  ъ: '',
+  ы: 'y',
+  ь: '',
+  э: 'e',
+  ю: 'yu',
+  я: 'ya',
 }
 
 function slugify(name: string): string {
@@ -63,7 +95,10 @@ export async function seedDemoData(user: User): Promise<void> {
     data: {
       name: 'Наша семья',
       description: 'Общие задачи, бюджет и события',
-      inviteCode: `DEMO${Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[01OI]/g, 'X')}`,
+      inviteCode: Array.from(
+        { length: INVITE_CODE_LENGTH },
+        () => INVITE_CODE_ALPHABET[randomInt(INVITE_CODE_ALPHABET.length)],
+      ).join(''),
       ownerId: user.id,
       members: {
         create: [
@@ -180,12 +215,42 @@ export async function seedDemoData(user: User): Promise<void> {
 
   await prisma.calendarEvent.createMany({
     data: [
-      { title: 'Семейный ужин', description: 'Готовим вместе', start: at(0, 19), end: at(0, 21), color: 'emerald', userId: user.id, groupId: group.id },
+      {
+        title: 'Семейный ужин',
+        description: 'Готовим вместе',
+        start: at(0, 19),
+        end: at(0, 21),
+        color: 'emerald',
+        userId: user.id,
+        groupId: group.id,
+      },
       { title: 'Приём у врача', start: at(2, 10), end: at(2, 11), color: 'amber', userId: user.id },
-      { title: 'Футбольный матч Миши', start: at(4, 16), end: at(4, 18), color: 'violet', userId: user.id, groupId: group.id },
-      { title: 'День рождения Анны', start: at(5, 0), end: at(5, 23, 59), allDay: true, color: 'rose', userId: user.id, groupId: group.id },
+      {
+        title: 'Футбольный матч Миши',
+        start: at(4, 16),
+        end: at(4, 18),
+        color: 'violet',
+        userId: user.id,
+        groupId: group.id,
+      },
+      {
+        title: 'День рождения Анны',
+        start: at(5, 0),
+        end: at(5, 23, 59),
+        allDay: true,
+        color: 'rose',
+        userId: user.id,
+        groupId: group.id,
+      },
       { title: 'Поход в кино', start: at(6, 19, 30), end: at(6, 22), color: 'teal', userId: user.id },
-      { title: 'Родительское собрание', start: at(3, 18), end: at(3, 19, 30), color: 'orange', userId: anna.id, groupId: group.id },
+      {
+        title: 'Родительское собрание',
+        start: at(3, 18),
+        end: at(3, 19, 30),
+        color: 'orange',
+        userId: anna.id,
+        groupId: group.id,
+      },
     ],
   })
 

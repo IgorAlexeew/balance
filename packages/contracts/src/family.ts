@@ -16,7 +16,10 @@ export const familyJoinSchema = z.object({
     .string({ error: 'Введите код приглашения' })
     .trim()
     .toUpperCase()
-    .regex(new RegExp(`^[${INVITE_CODE_ALPHABET}]{6,${INVITE_CODE_LENGTH}}$`), 'Некорректный код приглашения'),
+    .regex(
+      new RegExp(`^[${INVITE_CODE_ALPHABET}]{6,${INVITE_CODE_LENGTH}}$`),
+      'Некорректный код приглашения',
+    ),
 })
 export type FamilyJoinInput = z.input<typeof familyJoinSchema>
 

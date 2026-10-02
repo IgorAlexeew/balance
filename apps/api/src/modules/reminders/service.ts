@@ -10,7 +10,8 @@ export function reminderData(input: ReminderInput) {
   return {
     type: input.type,
     time: 'time' in input ? input.time : null,
-    daysOfWeek: input.type === 'weekly' ? [...new Set(input.daysOfWeek)].sort((a, b) => a - b).join(',') : null,
+    daysOfWeek:
+      input.type === 'weekly' ? [...new Set(input.daysOfWeek)].sort((a, b) => a - b).join(',') : null,
     offsetMinutes: input.type === 'before' ? input.offsetMinutes : null,
     fireAt: input.type === 'once' ? new Date(input.fireAt) : null,
   }

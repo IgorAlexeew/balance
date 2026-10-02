@@ -12,7 +12,10 @@ export function buildBudgetSummary(month: string, rows: Row[]): BudgetSummaryDTO
   const [year, monthNum] = month.split('-').map(Number) as [number, number]
   const daysInMonth = new Date(Date.UTC(year, monthNum, 0)).getUTCDate()
   const byDay = Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, income: 0, expense: 0 }))
-  const byCategory = new Map<string, { category: string; type: TransactionType; total: number; count: number }>()
+  const byCategory = new Map<
+    string,
+    { category: string; type: TransactionType; total: number; count: number }
+  >()
   let totalIncome = 0
   let totalExpense = 0
 

@@ -24,9 +24,9 @@ describe('computeNextFireAt', () => {
     expect(computeNextFireAt(r, { deadline: null, timezone: 'Europe/Samara', after })?.toISOString()).toBe(
       '2026-10-02T04:00:00.000Z',
     )
-    expect(computeNextFireAt(r, { deadline: null, timezone: 'Asia/Yekaterinburg', after })?.toISOString()).toBe(
-      '2026-10-02T03:00:00.000Z',
-    )
+    expect(
+      computeNextFireAt(r, { deadline: null, timezone: 'Asia/Yekaterinburg', after })?.toISOString(),
+    ).toBe('2026-10-02T03:00:00.000Z')
   })
 
   it('weekly: ближайший подходящий день недели', () => {
@@ -57,7 +57,9 @@ describe('computeNextFireAt', () => {
       '2026-10-02T14:00:00.000Z',
     )
     expect(computeNextFireAt(rule({ type: 'before', offsetMinutes: 600 }), ctx)).toBeNull()
-    expect(computeNextFireAt(rule({ type: 'once', fireAt: new Date('2026-10-01T00:00:00Z') }), ctx)).toBeNull()
+    expect(
+      computeNextFireAt(rule({ type: 'once', fireAt: new Date('2026-10-01T00:00:00Z') }), ctx),
+    ).toBeNull()
     expect(computeNextFireAt(rule({ type: 'at_deadline' }), { ...ctx, deadline: null })).toBeNull()
   })
 })

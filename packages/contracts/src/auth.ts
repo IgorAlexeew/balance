@@ -9,6 +9,10 @@ export interface UserDTO {
   timezone: string
 }
 
+export interface SessionDTO {
+  user: UserDTO | null
+}
+
 /** Какие возможности включены на сервере */
 export interface AppConfigDTO {
   auth: { yandex: boolean; demo: boolean }

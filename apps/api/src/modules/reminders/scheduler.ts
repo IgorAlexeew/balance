@@ -29,7 +29,11 @@ export async function processDueReminders(now = new Date()): Promise<number> {
   for (const reminder of due) {
     const { task } = reminder
     const recipient = task.assignee ?? task.createdBy
-    const next = computeNextFireAt(reminder, { deadline: task.deadline, timezone: recipient.timezone, after: now })
+    const next = computeNextFireAt(reminder, {
+      deadline: task.deadline,
+      timezone: recipient.timezone,
+      after: now,
+    })
 
     let body = `«${task.title}» — ${BODY_BY_TYPE[reminder.type] ?? 'пора действовать'}`
     if (task.deadline) {

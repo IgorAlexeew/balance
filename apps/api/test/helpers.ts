@@ -67,7 +67,10 @@ export async function createGroup(ownerId: string, memberIds: string[] = []) {
       inviteCode: randomBytes(4).toString('hex').toUpperCase(),
       ownerId,
       members: {
-        create: [{ userId: ownerId, role: 'owner' }, ...memberIds.map((userId) => ({ userId, role: 'member' }))],
+        create: [
+          { userId: ownerId, role: 'owner' },
+          ...memberIds.map((userId) => ({ userId, role: 'member' })),
+        ],
       },
     },
   })

@@ -57,9 +57,26 @@ describe('auth & security', () => {
     const app = testApp()
     const user = await createUser('Ivan')
     const cookie = await sessionCookie(user.id)
-    const out = await app.request('/api/auth/logout', { method: 'POST', headers: { Cookie: cookie, Origin: ORIGIN } })
+    const out = await app.request('/api/auth/logout', {
+      method: 'POST',
+      headers: { Cookie: cookie, Origin: ORIGIN },
+    })
     expect(out.status).toBe(200)
     const me = await app.request('/api/me', { headers: { Cookie: cookie } })
     expect(me.status).toBe(401)
+  })
+})
+
+describe('session endpoint', () => {
+  it('гость получает user: null, авторизованный — себя', async () => {
+    const app = testApp()
+    const guest = await app.request('/api/session')
+    expect(guest.status).toBe(200)
+    expect(await guest.json()).toEqual({ user: null })
+
+    const user = await createUser('Ivan')
+    const res = await app.request('/api/session', { headers: { Cookie: await sessionCookie(user.id) } })
+    const body = (await res.json()) as { user: { id: string } }
+    expect(body.user.id).toBe(user.id)
   })
 })

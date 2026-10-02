@@ -43,7 +43,8 @@ function groupToDTO(g: GroupWithMembers): FamilyGroupDTO {
 
 function randomInviteCode(): string {
   let code = ''
-  for (let i = 0; i < INVITE_CODE_LENGTH; i++) code += INVITE_CODE_ALPHABET[randomInt(INVITE_CODE_ALPHABET.length)]
+  for (let i = 0; i < INVITE_CODE_LENGTH; i++)
+    code += INVITE_CODE_ALPHABET[randomInt(INVITE_CODE_ALPHABET.length)]
   return code
 }
 
@@ -102,11 +103,18 @@ export const familyRoutes = new Hono<AppEnv>()
 
   .post(
     '/join',
-    rateLimit({ name: 'family-join', limit: 10, windowMs: 10 * 60 * 1000, message: 'Слишком много попыток, попробуйте позже' }),
+    rateLimit({
+      name: 'family-join',
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+      message: 'Слишком много попыток, попробуйте позже',
+    }),
     validate('json', familyJoinSchema),
     async (c) => {
       const user = c.get('user')
-      const group = await prisma.familyGroup.findUnique({ where: { inviteCode: c.req.valid('json').inviteCode } })
+      const group = await prisma.familyGroup.findUnique({
+        where: { inviteCode: c.req.valid('json').inviteCode },
+      })
       if (!group) throw notFound('Группа по этому коду не найдена')
       try {
         await prisma.familyMember.create({ data: { groupId: group.id, userId: user.id, role: 'member' } })
@@ -116,7 +124,10 @@ export const familyRoutes = new Hono<AppEnv>()
         }
         throw e
       }
-      const updated = await prisma.familyGroup.findUniqueOrThrow({ where: { id: group.id }, include: GROUP_INCLUDE })
+      const updated = await prisma.familyGroup.findUniqueOrThrow({
+        where: { id: group.id },
+        include: GROUP_INCLUDE,
+      })
       return c.json(groupToDTO(updated))
     },
   )
@@ -126,7 +137,11 @@ export const familyRoutes = new Hono<AppEnv>()
     const membership = await getMembership(c.get('user').id, c.req.valid('param').id)
     if (membership.group.ownerId !== membership.userId) throw forbidden('Обновить код может только владелец')
     const group = await withUniqueInviteCode((inviteCode) =>
-      prisma.familyGroup.update({ where: { id: membership.groupId }, data: { inviteCode }, include: GROUP_INCLUDE }),
+      prisma.familyGroup.update({
+        where: { id: membership.groupId },
+        data: { inviteCode },
+        include: GROUP_INCLUDE,
+      }),
     )
     return c.json(groupToDTO(group))
   })
@@ -159,7 +174,8 @@ export const familyRoutes = new Hono<AppEnv>()
 
   .delete('/:id', validate('param', idParam), async (c) => {
     const membership = await getMembership(c.get('user').id, c.req.valid('param').id)
-    if (membership.group.ownerId !== membership.userId) throw forbidden('Удалить группу может только владелец')
+    if (membership.group.ownerId !== membership.userId)
+      throw forbidden('Удалить группу может только владелец')
     await prisma.familyGroup.delete({ where: { id: membership.groupId } })
     return c.json({ ok: true })
   })

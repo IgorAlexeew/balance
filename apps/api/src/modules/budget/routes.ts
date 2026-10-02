@@ -28,7 +28,12 @@ export const budgetRoutes = new Hono<AppEnv>()
 
   .post(
     '/analysis',
-    rateLimit({ name: 'ai', limit: 10, windowMs: 60 * 60 * 1000, message: 'Слишком много запросов к ИИ, попробуйте позже' }),
+    rateLimit({
+      name: 'ai',
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+      message: 'Слишком много запросов к ИИ, попробуйте позже',
+    }),
     validate('json', budgetQuerySchema),
     async (c) => {
       const ai = c.get('config').ai
