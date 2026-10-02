@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Строковые «enum»-поля (SQLite не поддерживает enum): допустимые значения
+// задаются в @balance/contracts и проверяются на входе API.
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?
+  image     String?
+  /// IANA-зона пользователя: по ней считаются ежедневные/еженедельные напоминания
+  timezone  String   @default("Europe/Moscow")
+  /// Пользователь создан демо-входом (только для dev-окружения)
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  tasksCreated  Task[]             @relation("CreatedTasks")
+  tasksAssigned Task[]             @relation("AssignedTasks")
+  transactions  Transaction[]
+  events        CalendarEvent[]
+  memberships   FamilyMember[]
+  groupsOwned   FamilyGroup[]      @relation("GroupOwner")
+  notifications UserNotification[]
+}
+
+/// Привязка внешнего провайдера входа (Яндекс ID) к пользователю
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String // yandex
+  providerAccountId String
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+/// Серверная сессия: в cookie хранится случайный токен, в БД — только его SHA-256
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model FamilyGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String   @unique
+  ownerId     String
+  owner       User     @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  members      FamilyMember[]
+  tasks        Task[]
+  transactions Transaction[]
+  events       CalendarEvent[]
+}
+
+model FamilyMember {
+  id        String      @id @default(cuid())
+  groupId   String
+  group     FamilyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String      @default("member") // owner | member
+  createdAt DateTime    @default(now())
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      String       @default("todo") // todo | done
+  priority    String       @default("medium") // low | medium | high | urgent
+  deadline    DateTime?
+  completedAt DateTime?
+  assigneeId  String?
+  assignee    User?        @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById String
+  createdBy   User         @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Cascade)
+  groupId     String?
+  group       FamilyGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  reminder Reminder?
+
+  @@index([createdById])
+  @@index([assigneeId])
+  @@index([groupId])
+}
+
+model Reminder {
+  id            String    @id @default(cuid())
+  taskId        String    @unique
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type          String // at_deadline | before | daily | morning | weekly | once
+  time          String? // HH:MM в часовом поясе получателя
+  daysOfWeek    String? // "1,3,5" (1 = Пн … 7 = Вс)
+  offsetMinutes Int? // для before
+  fireAt        DateTime? // для once
+  /// Следующее срабатывание; null — больше не сработает. Пересчитывается при
+  /// сохранении задачи и после каждого срабатывания планировщиком.
+  nextFireAt    DateTime?
+  lastFiredAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([nextFireAt])
+}
+
+model Transaction {
+  id          String       @id @default(cuid())
+  type        String // income | expense
+  /// Сумма в копейках
+  amount      Int
+  category    String
+  description String?
+  /// Календарная дата операции YYYY-MM-DD (без часового пояса)
+  date        String
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId     String?
+  group       FamilyGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+
+  @@index([userId, groupId, date])
+  @@index([groupId, date])
+}
+
+model CalendarEvent {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime
+  allDay      Boolean      @default(false)
+  color       String       @default("emerald")
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId     String?
+  group       FamilyGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+
+  @@index([userId, groupId, start])
+  @@index([groupId, start])
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String   @default("reminder") // reminder | info
+  read      Boolean  @default(false)
+  taskId    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
