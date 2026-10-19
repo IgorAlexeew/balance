@@ -108,3 +108,5 @@ node dist/main.js
 С `WEB_DIST_DIR` API сам отдаёт собранный фронтенд (SPA), так что достаточно одного процесса
 за reverse-proxy с TLS (nginx/Caddy). На `https://` cookie сессии получает флаги `Secure` и
 префикс `__Host-`.
+
+Автоматический деплой на VPS из GitHub Actions (systemd + Caddy) описан в [deploy/README.md](deploy/README.md).

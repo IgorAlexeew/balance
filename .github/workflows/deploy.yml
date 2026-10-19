@@ -1,0 +1,52 @@
+name: Deploy
+
+# Деплой на VPS после зелёного CI в master (или вручную из Actions).
+# Сервер готовится один раз скриптом deploy/setup.sh, подробности — в deploy/README.md.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Самодостаточный бандл: API с prod-зависимостями (Prisma Client сгенерирован) + сборка фронтенда
+      - name: Bundle
+        run: |
+          pnpm --filter @balance/api deploy --prod release
+          rm -rf release/src release/test
+          cp -r apps/web/dist release/web
+          tar -czf release.tgz -C release .
+
+      - name: Upload and release
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          TARGET: ${{ vars.DEPLOY_USER || 'balance' }}@${{ vars.DEPLOY_HOST }}
+          RELEASE: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          scp release.tgz "$TARGET:/tmp/balance-$RELEASE.tgz"
+          ssh "$TARGET" bash -s -- "$RELEASE" < deploy/release.sh
