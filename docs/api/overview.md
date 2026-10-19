@@ -283,7 +283,8 @@ sequenceDiagram
   создаются демо-данные: семья с Анной и Мишей, задачи с разными напоминаниями, операции за месяц,
   события, уведомление. Даты считаются от «сегодня» в зоне пользователя.
 - С именем — отдельный пустой пользователь с email `<транслит-имени>@demo.lifebalance.local`
-  (удобно проверять семейные группы вдвоём). Одинаковое имя даёт тот же аккаунт.
+  (удобно проверять семейные группы вдвоём). Аккаунт ищется по этому email, поэтому имена с одинаковым
+  транслитом дают один аккаунт, а «Анна» и «Миша» входят в демо-участников семьи Александра.
 - Демо-пользователи помечены `isDemo = true`. Тот же код запускает `pnpm db:seed` (запрещён в production).
 
 ### Публичные эндпоинты
@@ -445,9 +446,11 @@ erDiagram
 - Удаление задачи удаляет её напоминание. `UserNotification.taskId` — просто строка без внешнего ключа:
   после удаления задачи ссылка в уведомлении «висит».
 
-Индексы: `Session.expiresAt` (очистка), `Reminder.nextFireAt` (тик), составные индексы
-`Transaction(userId, groupId, date)`, `Transaction(groupId, date)`, `CalendarEvent(userId, groupId, start)`,
-`CalendarEvent(groupId, start)`, `UserNotification(userId, read)`, `UserNotification(userId, createdAt)`.
+Индексы: `Session.expiresAt` (очистка), `Reminder.nextFireAt` (тик), по внешним ключам
+`Account.userId`, `Session.userId`, `FamilyMember.userId`, `Task.createdById`, `Task.assigneeId`,
+`Task.groupId`, составные `Transaction(userId, groupId, date)`, `Transaction(groupId, date)`,
+`CalendarEvent(userId, groupId, start)`, `CalendarEvent(groupId, start)`, `UserNotification(userId, read)`,
+`UserNotification(userId, createdAt)`.
 
 ## Напоминания
 
@@ -596,12 +599,12 @@ sequenceDiagram
 
 ### События (`EventsController`)
 
-| Метод  | Путь              | Доступ | Вход                                                                                                | Ответ                  | Ошибки                           |
-| ------ | ----------------- | ------ | --------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------- |
-| GET    | `/api/events`     | сессия | query `eventListQuerySchema`: `from`, `to` (ISO, `to > from`, не больше 400 дней), `groupId?`       | `CalendarEventDTO[]`   | 403 группа                       |
-| POST   | `/api/events`     | сессия | `eventCreateSchema`: `title`, `description?`, `start`, `end > start`, `allDay`, `color`, `groupId?` | 201 `CalendarEventDTO` | 403 группа                       |
-| PATCH  | `/api/events/:id` | сессия | `idSchema`, `eventUpdateSchema` (без `groupId`)                                                     | `CalendarEventDTO`     | 404; 400 окончание раньше начала |
-| DELETE | `/api/events/:id` | сессия | `idSchema`                                                                                          | `{ ok: true }`         | 404                              |
+| Метод  | Путь              | Доступ | Вход                                                                                                  | Ответ                  | Ошибки                           |
+| ------ | ----------------- | ------ | ----------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------- |
+| GET    | `/api/events`     | сессия | query `eventListQuerySchema`: `from`, `to` (ISO, `to > from`, не больше 400 дней), `groupId?`         | `CalendarEventDTO[]`   | 403 группа                       |
+| POST   | `/api/events`     | сессия | `eventCreateSchema`: `title`, `description?`, `start`, `end > start`, `allDay?`, `color?`, `groupId?` | 201 `CalendarEventDTO` | 403 группа                       |
+| PATCH  | `/api/events/:id` | сессия | `idSchema`, `eventUpdateSchema` (без `groupId`)                                                       | `CalendarEventDTO`     | 404; 400 окончание раньше начала |
+| DELETE | `/api/events/:id` | сессия | `idSchema`                                                                                            | `{ ok: true }`         | 404                              |
 
 Список — события, пересекающие диапазон `[from, to)`, по возрастанию начала.
 
@@ -617,8 +620,8 @@ sequenceDiagram
 | DELETE | `/api/family/:id`             | сессия | `idSchema`                                               | `{ ok: true }`       | 404 не участник; 403 не владелец         | —                                              |
 
 Код приглашения — 8 символов из алфавита без похожих символов (`0/O`, `1/I`), видит любой участник.
-Выход: если уходит последний участник, группа удаляется со всеми данными; иначе с уходящего
-снимаются его групповые задачи, а если он владелец — владение переходит самому давнему участнику.
+Выход: если уходит последний участник, группа удаляется со всеми данными; иначе уходящий перестаёт
+быть исполнителем задач группы, а если он владелец — владение переходит самому давнему участнику.
 Исключить участника из группы нельзя (эндпоинта нет).
 
 ### Уведомления (`NotificationsController`)
@@ -652,7 +655,8 @@ sequenceDiagram
 
 `config/app-config.ts` разбирает `process.env` zod-схемой; при ошибке приложение не стартует
 и выводит список проблем. `main.ts` перед этим подгружает `apps/api/.env` (`process.loadEnvFile`),
-переменные окружения процесса имеют приоритет. Пустая строка считается «не задано».
+переменные окружения процесса имеют приоритет. Для необязательных переменных и `DEMO_LOGIN` пустая
+строка считается «не задано».
 Конфиг внедряется через `@InjectConfig()` (токен `APP_CONFIG`).
 
 | Переменная             | По умолчанию            | Что включает / на что влияет                                                                                                    |
@@ -759,7 +763,7 @@ sequenceDiagram
 17. **[пр] `rescheduleForUser` пересчитывает напоминания по одной задаче в цикле**: для каждой — отдельный
     `findUnique` с связями и `update`, вне транзакции. Можно загрузить всё одним запросом.
 18. **[пр] Сводка бюджета считается в памяти** по всем операциям месяца; можно `groupBy` в БД.
-19. **[пр] `SessionGuard` ходит в БД на каждый запрос**, включая публичные (`/config`) — это ожидаемо для
+19. **[пр] `SessionGuard` ходит в БД на каждый запрос с cookie сессии**, включая публичные (`/config`) — это ожидаемо для
     серверных сессий, но стоит учесть при росте нагрузки.
 
 ### Поведение и возможные ошибки
