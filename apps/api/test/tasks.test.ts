@@ -95,4 +95,31 @@ describe('tasks', () => {
     expect(notifications).toHaveLength(1)
     expect(notifications[0]!.userId).toBe(boris.id)
   })
+
+  it('сортировка: незавершённые, затем по сроку (без срока в конце), затем новые; фильтры статуса', async () => {
+    const app = await testApp()
+    const anna = await createUser('Anna')
+    const a = await clientFor(app, anna.id)
+    const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString()
+    await a.post('/tasks', { title: 'done', status: 'done', deadline: day(-5) })
+    await a.post('/tasks', { title: 'no deadline old' })
+    await a.post('/tasks', { title: 'later', deadline: day(3) })
+    await a.post('/tasks', { title: 'overdue', deadline: day(-1) })
+    await a.post('/tasks', { title: 'no deadline new' })
+
+    const titles = async (q: string) =>
+      (await a.get(`/tasks${q}`)).body.map((t: { title: string }) => t.title)
+    expect(await titles('')).toEqual(['overdue', 'later', 'no deadline new', 'no deadline old', 'done'])
+    expect(await titles('?status=done')).toEqual(['done'])
+    expect(await titles('?status=overdue')).toEqual(['overdue'])
+  })
+
+  it('удаление задачи удаляет и напоминание', async () => {
+    const app = await testApp()
+    const anna = await createUser('Anna')
+    const a = await clientFor(app, anna.id)
+    const { body: task } = await a.post('/tasks', { title: 'T', reminder: { type: 'daily', time: '09:00' } })
+    expect((await a.del(`/tasks/${task.id}`)).status).toBe(200)
+    expect(await db.reminder.count()).toBe(0)
+  })
 })
