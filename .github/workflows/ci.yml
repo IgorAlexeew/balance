@@ -32,7 +32,7 @@ jobs:
     needs: check
     if: github.event_name == 'push' && (github.ref_name == 'develop' || github.ref_name == 'master')
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
+    environment: ${{ github.ref_name == 'master' && 'production' || 'develop' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -56,6 +56,7 @@ jobs:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           TARGET: ${{ vars.DEPLOY_USER || 'balance' }}@${{ vars.DEPLOY_HOST }}
+          ENV_NAME: ${{ github.ref_name == 'master' && 'production' || 'develop' }}
           APP: balance-${{ github.ref_name == 'master' && 'prod' || 'dev' }}
           RELEASE: ${{ github.sha }}
           PORT: ${{ github.ref_name == 'master' && '3001' || '3002' }}
@@ -64,6 +65,10 @@ jobs:
           YANDEX_CLIENT_SECRET: ${{ secrets.YANDEX_CLIENT_SECRET }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
         run: |
+          if [ -z "${TARGET#*@}" ] || [ -z "$SSH_KEY" ]; then
+            echo "::error::Нет DEPLOY_HOST/DEPLOY_SSH_KEY в окружении GitHub «$ENV_NAME» (Settings → Environments)"
+            exit 1
+          fi
           install -m 700 -d ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
