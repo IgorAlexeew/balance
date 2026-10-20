@@ -83,7 +83,7 @@ fi
 systemctl reload caddy
 
 echo
-echo "Готово. Добавьте в GitHub (Settings → Environments → $([ $STAGE = prod ] && echo production || echo dev)):"
+echo "Готово. Добавьте в GitHub (Settings → Environments → $([ $STAGE = prod ] && echo production || echo develop)):"
 echo
 echo "Переменная DEPLOY_HOST: ${DOMAIN:-$IP}"
 echo
