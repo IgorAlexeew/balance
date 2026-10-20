@@ -1,23 +1,28 @@
 name: Deploy
 
-# Деплой на VPS после зелёного CI в master (или вручную из Actions).
+# Деплой на VPS после зелёного CI (или вручную из Actions): develop → стенд dev, master → prod.
 # Сервер готовится один раз скриптом deploy/setup.sh, подробности — в deploy/README.md.
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [master]
+    branches: [develop, master]
   workflow_dispatch:
 
+env:
+  BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+
 concurrency:
-  group: deploy
+  group: deploy-${{ github.event.workflow_run.head_branch || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') &&
+      contains(fromJSON('["develop","master"]'), github.event.workflow_run.head_branch || github.ref_name)
     runs-on: ubuntu-24.04
-    environment: production
+    environment: ${{ (github.event.workflow_run.head_branch || github.ref_name) == 'master' && 'production' || 'dev' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,18 +48,26 @@ jobs:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           TARGET: ${{ vars.DEPLOY_USER || 'balance' }}@${{ vars.DEPLOY_HOST }}
+          APP: balance-${{ env.BRANCH == 'master' && 'prod' || 'dev' }}
           RELEASE: ${{ github.event.workflow_run.head_sha || github.sha }}
-          # Ключи интеграций: пустые — функция выключена
-          YANDEX_CLIENT_ID: ${{ secrets.YANDEX_CLIENT_ID }}
-          YANDEX_CLIENT_SECRET: ${{ secrets.YANDEX_CLIENT_SECRET }}
-          AI_API_URL: ${{ secrets.AI_API_URL }}
-          AI_API_KEY: ${{ secrets.AI_API_KEY }}
-          AI_MODEL: ${{ secrets.AI_MODEL }}
+          PORT: ${{ env.BRANCH == 'master' && '3001' || '3002' }}
+          VARS: ${{ toJSON(vars) }}
+          SECRETS: ${{ toJSON(secrets) }}
         run: |
           install -m 700 -d ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
           echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          (umask 077 && env | grep -E '^(YANDEX_CLIENT_ID|YANDEX_CLIENT_SECRET|AI_API_URL|AI_API_KEY|AI_MODEL)=' > secrets.env)
-          scp -p secrets.env "$TARGET:/opt/balance/shared/secrets.env"
-          scp release.tgz "$TARGET:/tmp/balance-$RELEASE.tgz"
-          ssh "$TARGET" bash -s -- "$RELEASE" < deploy/release.sh
+          # .env приложения: переменные и секреты окружения GitHub (кроме DEPLOY_*), см. apps/api/.env.example
+          (
+            umask 077
+            echo "APP_URL=https://${TARGET#*@}"
+            jq -rs 'add | to_entries[] | select(.key | test("^(DEPLOY_|github_token$)") | not) | "\(.key)=\(.value)"' \
+              <<< "$VARS $SECRETS"
+            echo "NODE_ENV=production"
+            echo "PORT=$PORT"
+            echo "DATABASE_URL=file:/opt/$APP/shared/data/balance.db"
+            echo "WEB_DIST_DIR=web"
+          ) > app.env
+          scp -p app.env "$TARGET:/opt/$APP/shared/.env"
+          scp release.tgz "$TARGET:/tmp/$APP-$RELEASE.tgz"
+          ssh "$TARGET" bash -s -- "$APP" "$RELEASE" < deploy/release.sh

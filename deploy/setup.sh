@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
-# Разовая подготовка VPS (Ubuntu 22.04+/Debian 12) под деплой из GitHub Actions. Запуск от root:
-#   DOMAIN=lucerna-studio.ru bash setup.sh
+# Разовая подготовка стенда на VPS (Ubuntu 22.04+/Debian 12) под деплой из GitHub Actions. Запуск от root:
+#   STAGE=dev DOMAIN=dev.lucerna-studio.ru bash setup.sh
+# STAGE — dev (ветка develop) или prod (ветка master); стенды живут на одном сервере независимо.
 # DOMAIN — домен, смотрящий на сервер (Caddy сам получит HTTPS); без него сайт будет на http://<IP>.
 set -euo pipefail
 
+STAGE=${STAGE:-dev}
+case $STAGE in
+  dev) PORT=3002 ;;
+  prod) PORT=3001 ;;
+  *) echo "STAGE должен быть dev или prod" >&2 && exit 1 ;;
+esac
+APP=balance-$STAGE
 SITE=${DOMAIN:-:80}
-ROOT=/opt/balance
+ROOT=/opt/$APP
 IP=$(hostname -I | awk '{print $1}')
 
 # Node.js 22 и Caddy из официальных репозиториев
@@ -17,45 +25,33 @@ curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt > /etc/ap
 apt-get update
 apt-get install -y nodejs caddy
 
-# Пользователь деплоя: может только перезапускать сервис приложения
+# Пользователь деплоя: может только перезапускать сервисы приложения
 id balance &> /dev/null || useradd --system --create-home --shell /bin/bash balance
 usermod -aG systemd-journal balance
 install -d -m 700 -o balance -g balance /home/balance/.ssh
-# Ключ для GitHub Actions: публичная часть остаётся здесь, приватная печатается в конце для секрета
+# Ключ стенда для GitHub Actions: публичная часть остаётся здесь, приватная печатается в конце для секрета
 KEY=$(mktemp -u)
-ssh-keygen -q -t ed25519 -N '' -C balance-deploy -f "$KEY"
-mv "$KEY.pub" /home/balance/.ssh/authorized_keys
-chown balance:balance /home/balance/.ssh/authorized_keys && chmod 600 /home/balance/.ssh/authorized_keys
-cat > /etc/sudoers.d/balance << 'EOF'
-balance ALL=(root) NOPASSWD: /usr/bin/systemctl start balance, /usr/bin/systemctl stop balance, /usr/bin/systemctl restart balance
+ssh-keygen -q -t ed25519 -N '' -C "$APP-deploy" -f "$KEY"
+AUTH=/home/balance/.ssh/authorized_keys
+touch $AUTH && sed -i "/ $APP-deploy\$/d" $AUTH && cat "$KEY.pub" >> $AUTH && rm -f "$KEY.pub"
+chown balance:balance $AUTH && chmod 600 $AUTH
+cat > /etc/sudoers.d/$APP << EOF
+balance ALL=(root) NOPASSWD: /usr/bin/systemctl start $APP, /usr/bin/systemctl stop $APP, /usr/bin/systemctl restart $APP
 EOF
-chmod 440 /etc/sudoers.d/balance
+chmod 440 /etc/sudoers.d/$APP
 
 install -d -o balance -g balance $ROOT $ROOT/releases $ROOT/shared $ROOT/shared/data
-if [ ! -f $ROOT/shared/.env ]; then
-  APP_URL=$([ -n "${DOMAIN:-}" ] && echo "https://$DOMAIN" || echo "http://$IP")
-  cat > $ROOT/shared/.env << EOF
-NODE_ENV=production
-PORT=3001
-APP_URL=$APP_URL
-DATABASE_URL=file:$ROOT/shared/data/balance.db
-WEB_DIST_DIR=web
-DEFAULT_TIMEZONE=Europe/Moscow
-EOF
-  chown balance:balance $ROOT/shared/.env && chmod 600 $ROOT/shared/.env
-fi
 
-cat > /etc/systemd/system/balance.service << EOF
+cat > /etc/systemd/system/$APP.service << EOF
 [Unit]
-Description=Balance API
+Description=Balance ($STAGE)
 After=network.target
 
 [Service]
 User=balance
 WorkingDirectory=$ROOT/current
+# Конфигурацию пишет деплой из переменных и секретов окружения GitHub
 EnvironmentFile=$ROOT/shared/.env
-# Ключи интеграций (Яндекс ID, ИИ) — пишет деплой из секретов GitHub
-EnvironmentFile=-$ROOT/shared/secrets.env
 ExecStart=/usr/bin/node --max-old-space-size=256 dist/main.js
 Restart=always
 RestartSec=3
@@ -64,17 +60,20 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable balance
+systemctl enable $APP
 
-cat > /etc/caddy/Caddyfile << EOF
+# У каждого стенда свой файл сайта
+install -d /etc/caddy/sites
+echo "import /etc/caddy/sites/*.caddy" > /etc/caddy/Caddyfile
+cat > /etc/caddy/sites/$APP.caddy << EOF
 $SITE {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:3001
+	reverse_proxy 127.0.0.1:$PORT
 }
 EOF
 # www.<домен> → <домен>, если у www есть DNS-запись
 if [ -n "${DOMAIN:-}" ] && getent hosts "www.$DOMAIN" > /dev/null; then
-  cat >> /etc/caddy/Caddyfile << EOF
+  cat >> /etc/caddy/sites/$APP.caddy << EOF
 
 www.$DOMAIN {
 	redir https://$DOMAIN{uri} permanent
@@ -84,7 +83,7 @@ fi
 systemctl reload caddy
 
 echo
-echo "Готово. Добавьте в GitHub (Settings → Environments → production):"
+echo "Готово. Добавьте в GitHub (Settings → Environments → $([ $STAGE = prod ] && echo production || echo dev)):"
 echo
 echo "Переменная DEPLOY_HOST: ${DOMAIN:-$IP}"
 echo
