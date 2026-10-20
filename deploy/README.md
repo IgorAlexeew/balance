@@ -32,7 +32,7 @@
 3. На сервере от root:
    ```bash
    curl -fsSLO https://raw.githubusercontent.com/IgorAlexeew/balance/master/deploy/setup.sh
-   DOMAIN=balance.example.ru DEPLOY_PUBKEY="$(cat balance_deploy.pub)" bash setup.sh   # без домена: не задавайте DOMAIN
+   DOMAIN=lucerna-studio.ru DEPLOY_PUBKEY="$(cat balance_deploy.pub)" bash setup.sh   # без домена: не задавайте DOMAIN
    ```
    Скрипт ставит Node.js 22 и Caddy, создаёт пользователя `balance` (может только перезапускать сервис),
    каталоги, `shared/.env`, systemd-юнит и конфиг Caddy, а в конце печатает строку для `DEPLOY_KNOWN_HOSTS`.

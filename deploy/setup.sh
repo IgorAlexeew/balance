@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Разовая подготовка VPS (Ubuntu 22.04+/Debian 12) под деплой из GitHub Actions. Запуск от root:
-#   DOMAIN=balance.example.ru DEPLOY_PUBKEY="ssh-ed25519 AAAA..." bash setup.sh
+#   DOMAIN=lucerna-studio.ru DEPLOY_PUBKEY="ssh-ed25519 AAAA..." bash setup.sh
 # DOMAIN — домен, смотрящий на сервер (Caddy сам получит HTTPS); без него сайт будет на http://<IP>.
 set -euo pipefail
 
@@ -73,6 +73,15 @@ $SITE {
 	reverse_proxy 127.0.0.1:3001
 }
 EOF
+# www.<домен> → <домен>, если у www есть DNS-запись
+if [ -n "${DOMAIN:-}" ] && getent hosts "www.$DOMAIN" > /dev/null; then
+  cat >> /etc/caddy/Caddyfile << EOF
+
+www.$DOMAIN {
+	redir https://$DOMAIN{uri} permanent
+}
+EOF
+fi
 systemctl reload caddy
 
 echo
