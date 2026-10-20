@@ -3,7 +3,7 @@
 Схема для одного небольшого VPS без Docker:
 
 - **CI** (`.github/workflows/ci.yml`) — prettier, lint, typecheck, тесты и сборка на каждый PR и push.
-- **Deploy** (`.github/workflows/deploy.yml`) — после зелёного CI (или вручную) собирает самодостаточный бандл
+- **Deploy** (job `deploy` там же) — после зелёных проверок на push в `develop`/`master` собирает самодостаточный бандл
   (API с prod-зависимостями + сборка фронтенда), копирует его на сервер по SSH и запускает `deploy/release.sh`.
   Сервер ничего не собирает, ему нужен только Node.js.
 - Стенды независимы и живут на одном сервере:
@@ -59,7 +59,7 @@
    ключ для деплоя, каталоги стенда, systemd-юнит и сайт Caddy, а в конце печатает всё для GitHub.
 3. В GitHub создайте окружение стенда (`dev` или `production`) и добавьте напечатанное: `DEPLOY_HOST`,
    `DEPLOY_KNOWN_HOSTS`, `DEPLOY_SSH_KEY`, плюс нужные настройки приложения.
-4. Запустите Actions → Deploy → Run workflow из нужной ветки или запушьте в неё.
+4. Запушьте в ветку стенда (или перезапустите её последний прогон CI в Actions).
 
 ## Обслуживание
 
@@ -68,4 +68,4 @@ systemctl status balance-dev      # состояние
 journalctl -u balance-dev -f      # логи
 ```
 
-Откат на прошлую версию — перезапуск нужного прогона Deploy в GitHub Actions (Re-run jobs).
+Откат на прошлую версию — перезапуск job `deploy` нужного прогона CI в GitHub Actions (Re-run jobs).
