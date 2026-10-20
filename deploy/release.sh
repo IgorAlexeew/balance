@@ -25,8 +25,8 @@ PREV=$(readlink -f "$ROOT/current" || true)
 DB=${DATABASE_URL#file:}
 
 sudo systemctl stop "$APP"
+mkdir -p "$ROOT/shared/backups"
 if [ -f "$DB" ]; then
-  mkdir -p "$ROOT/shared/backups"
   cp "$DB" "$ROOT/shared/backups/$(date +%Y%m%d-%H%M%S)-${SHA:0:7}.db"
 fi
 (cd "$DIR" && node_modules/.bin/prisma migrate deploy)
@@ -34,11 +34,11 @@ ln -sfn "$DIR" "$ROOT/current"
 sudo systemctl start "$APP"
 
 for _ in $(seq 20); do
-  if curl -fsS "http://127.0.0.1:${PORT:-3001}/api/config" > /dev/null; then
+  if curl -fs "http://127.0.0.1:${PORT:-3001}/api/config" > /dev/null; then
     echo "Released $SHA"
     # Чистим старые релизы и бэкапы
     ls -1dt "$ROOT"/releases/* | tail -n +$((KEEP + 1)) | xargs -r rm -rf
-    ls -1t "$ROOT"/shared/backups/*.db 2> /dev/null | tail -n +11 | xargs -r rm -f
+    find "$ROOT/shared/backups" -name "*.db" -printf "%T@ %p\n" | sort -rn | cut -d" " -f2- | tail -n +11 | xargs -r rm -f
     exit 0
   fi
   sleep 1
