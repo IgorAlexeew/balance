@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 # Разовая подготовка VPS (Ubuntu 22.04+/Debian 12) под деплой из GitHub Actions. Запуск от root:
-#   DOMAIN=lucerna-studio.ru DEPLOY_PUBKEY="ssh-ed25519 AAAA..." bash setup.sh
+#   DOMAIN=lucerna-studio.ru bash setup.sh
 # DOMAIN — домен, смотрящий на сервер (Caddy сам получит HTTPS); без него сайт будет на http://<IP>.
 set -euo pipefail
 
-: "${DEPLOY_PUBKEY:?Укажите DEPLOY_PUBKEY — публичный ключ, которым будет входить GitHub Actions}"
 SITE=${DOMAIN:-:80}
 ROOT=/opt/balance
 IP=$(hostname -I | awk '{print $1}')
 
 # Node.js 22 и Caddy из официальных репозиториев
 apt-get update
-apt-get install -y curl ca-certificates gnupg debian-keyring debian-archive-keyring apt-transport-https
+apt-get install -y curl ca-certificates gnupg openssh-client debian-keyring debian-archive-keyring apt-transport-https
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt > /etc/apt/sources.list.d/caddy-stable.list
@@ -22,7 +21,10 @@ apt-get install -y nodejs caddy
 id balance &> /dev/null || useradd --system --create-home --shell /bin/bash balance
 usermod -aG systemd-journal balance
 install -d -m 700 -o balance -g balance /home/balance/.ssh
-echo "$DEPLOY_PUBKEY" > /home/balance/.ssh/authorized_keys
+# Ключ для GitHub Actions: публичная часть остаётся здесь, приватная печатается в конце для секрета
+KEY=$(mktemp -u)
+ssh-keygen -q -t ed25519 -N '' -C balance-deploy -f "$KEY"
+mv "$KEY.pub" /home/balance/.ssh/authorized_keys
 chown balance:balance /home/balance/.ssh/authorized_keys && chmod 600 /home/balance/.ssh/authorized_keys
 cat > /etc/sudoers.d/balance << 'EOF'
 balance ALL=(root) NOPASSWD: /usr/bin/systemctl start balance, /usr/bin/systemctl stop balance, /usr/bin/systemctl restart balance
@@ -39,11 +41,6 @@ APP_URL=$APP_URL
 DATABASE_URL=file:$ROOT/shared/data/balance.db
 WEB_DIST_DIR=web
 DEFAULT_TIMEZONE=Europe/Moscow
-YANDEX_CLIENT_ID=
-YANDEX_CLIENT_SECRET=
-AI_API_URL=
-AI_API_KEY=
-AI_MODEL=
 EOF
   chown balance:balance $ROOT/shared/.env && chmod 600 $ROOT/shared/.env
 fi
@@ -57,6 +54,8 @@ After=network.target
 User=balance
 WorkingDirectory=$ROOT/current
 EnvironmentFile=$ROOT/shared/.env
+# Ключи интеграций (Яндекс ID, ИИ) — пишет деплой из секретов GitHub
+EnvironmentFile=-$ROOT/shared/secrets.env
 ExecStart=/usr/bin/node --max-old-space-size=256 dist/main.js
 Restart=always
 RestartSec=3
@@ -85,5 +84,13 @@ fi
 systemctl reload caddy
 
 echo
-echo "Готово. Значение секрета DEPLOY_KNOWN_HOSTS:"
+echo "Готово. Добавьте в GitHub (Settings → Environments → production):"
+echo
+echo "Переменная DEPLOY_HOST: ${DOMAIN:-$IP}"
+echo
+echo "Секрет DEPLOY_KNOWN_HOSTS:"
 ssh-keyscan -t ed25519 localhost 2> /dev/null | sed "s/^localhost/${DOMAIN:-$IP}/"
+echo
+echo "Секрет DEPLOY_SSH_KEY (все строки, включая BEGIN/END):"
+cat "$KEY"
+rm -f "$KEY"
