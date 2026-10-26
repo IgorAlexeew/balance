@@ -90,6 +90,10 @@ Vite проксирует `/api` на API, поэтому фронтенд и б
 - `master` — production;
 - `develop` — dev-окружение; изменения вливаются в `master` через pull request.
 
+Порядок работы (ветка от `develop` → небольшой PR → ревью → слияние) описан в
+[`docs/WORKFLOW.md`](docs/WORKFLOW.md). Планы крупных задач лежат в [`docs/`](docs/),
+например [план мобильного приложения](docs/mobile-plan.md).
+
 ## Продакшен
 
 ```bash
