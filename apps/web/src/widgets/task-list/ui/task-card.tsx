@@ -22,7 +22,7 @@ export function TaskCard({
   const showAuthor = !!task.createdByName && task.createdById !== currentUserId
 
   return (
-    <Card className="gap-0 rounded-xl border p-4 shadow-sm transition-shadow hover:shadow-md">
+    <Card className="gap-0 p-4 transition-transform hover:-translate-y-0.5">
       <div className="flex items-start gap-3">
         <TaskDoneCheckbox task={task} className="mt-0.5" />
         <div className="min-w-0 flex-1">
@@ -43,7 +43,7 @@ export function TaskCard({
               <span
                 className={cn(
                   'inline-flex items-center gap-1 text-xs',
-                  overdue ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground',
+                  overdue ? 'text-rose-ink' : 'text-muted-foreground',
                 )}
               >
                 <Clock className="size-3" />

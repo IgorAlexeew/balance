@@ -27,7 +27,7 @@ function SummaryCard({
   tone: string
 }) {
   return (
-    <Card className="rounded-xl border shadow-sm">
+    <Card className="py-0">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Icon className={cn('size-4', tone)} />
@@ -36,15 +36,15 @@ function SummaryCard({
         {value === null ? (
           <Skeleton className="mt-2 h-7 w-28" />
         ) : (
-          <div className={cn('mt-1.5 truncate text-xl font-bold sm:text-2xl', tone)}>{value}</div>
+          <div className={cn('mt-1.5 truncate text-xl font-medium sm:text-2xl', tone)}>{value}</div>
         )}
       </CardContent>
     </Card>
   )
 }
 
-const POSITIVE = 'text-emerald-600 dark:text-emerald-400'
-const NEGATIVE = 'text-rose-600 dark:text-rose-400'
+const POSITIVE = 'text-sky-ink'
+const NEGATIVE = 'text-rose-ink'
 
 export function BudgetPage() {
   const { groupId, group } = useActiveGroup()
@@ -57,7 +57,7 @@ export function BudgetPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Бюджет</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Бюджет</h1>
           <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
             {group ? <Users className="size-3.5" /> : <User className="size-3.5" />}
             <span className="truncate">{group ? group.name : 'Личные данные'}</span>

@@ -25,7 +25,7 @@ export function TransactionsTable({
   onEdit: (t: TransactionDTO) => void
 }) {
   return (
-    <Card className="rounded-xl border shadow-sm">
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -81,7 +81,7 @@ export function TransactionsTable({
                     {showAuthor && (
                       <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-2">
-                          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-sky/25 text-[10px] font-semibold text-primary">
                             {initials(t.userName)}
                           </span>
                           <span className="max-w-24 truncate text-sm text-muted-foreground">
@@ -94,7 +94,7 @@ export function TransactionsTable({
                       <span
                         className={cn(
                           'font-semibold whitespace-nowrap',
-                          t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground',
+                          t.type === 'income' ? 'text-sky-ink' : 'text-rose-ink',
                         )}
                       >
                         {t.type === 'income' ? '+' : '−'}

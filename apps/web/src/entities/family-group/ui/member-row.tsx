@@ -8,7 +8,7 @@ export function MemberRow({ member, isMe }: { member: FamilyMemberDTO; isMe: boo
     <div className="flex items-center gap-2 py-1.5">
       <Avatar className="size-7">
         {member.image && <AvatarImage src={member.image} alt="" />}
-        <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+        <AvatarFallback className="bg-sky/25 text-xs font-semibold text-sky-ink">
           {initials(member.name)}
         </AvatarFallback>
       </Avatar>
@@ -18,7 +18,7 @@ export function MemberRow({ member, isMe }: { member: FamilyMemberDTO; isMe: boo
       </span>
       {member.role === 'owner' ? (
         <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-          <Crown className="size-3.5 text-amber-500" />
+          <Crown className="size-3.5 text-rose-ink" />
           Владелец
         </span>
       ) : (

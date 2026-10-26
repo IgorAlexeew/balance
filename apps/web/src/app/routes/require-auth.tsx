@@ -1,16 +1,14 @@
-import { CheckCircle2 } from 'lucide-react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { useViewer } from '@/entities/session'
 import { routes } from '@/shared/config'
+import { BrandMark } from '@/shared/ui/brand-mark'
 import { Button } from '@/shared/ui/button'
 
 export function SplashScreen() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <div className="grid size-14 animate-pulse place-items-center rounded-2xl bg-primary text-primary-foreground">
-        <CheckCircle2 className="size-8" />
-      </div>
-      <div className="text-lg font-semibold">LifeBalance</div>
+      <BrandMark className="size-16 animate-pulse" />
+      <div className="text-lg font-medium">Баланс</div>
     </div>
   )
 }

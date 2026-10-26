@@ -34,11 +34,7 @@ export function InviteCode({ code, action }: { code: string; action?: ReactNode 
             onClick={() => void copy()}
             aria-label="Скопировать код приглашения"
           >
-            {copied ? (
-              <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
-            ) : (
-              <Copy className="size-4" />
-            )}
+            {copied ? <Check className="size-4 text-sky-ink" /> : <Copy className="size-4" />}
           </Button>
         </div>
       </div>

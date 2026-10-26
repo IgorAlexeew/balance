@@ -39,7 +39,7 @@ export function CreateGroupCard() {
   })
 
   return (
-    <Card className="rounded-xl border shadow-sm">
+    <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Plus className="size-4.5 text-primary" />

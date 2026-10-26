@@ -53,7 +53,7 @@ export function TasksPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Задачи</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Задачи</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{group ? group.name : 'Личные задачи'}</p>
         </div>
         <Button size="sm" className="gap-1.5" onClick={() => dialog.openWith()}>
@@ -79,7 +79,7 @@ export function TasksPage() {
           ))}
         </div>
       ) : tasks.length === 0 ? (
-        <Card className="rounded-xl border py-0 shadow-sm">
+        <Card className="py-0">
           <EmptyState
             icon={empty.icon}
             title={empty.title}
