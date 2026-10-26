@@ -11,6 +11,7 @@ import {
 import type { z } from 'zod'
 import { ApiError, forbidden, notFound } from '../../common/api-error'
 import { PrismaService } from '../../prisma/prisma.service'
+import { RemindersService } from '../reminders/reminders.service'
 
 const GROUP_INCLUDE = { members: { include: { user: true }, orderBy: { createdAt: 'asc' } } } as const
 type GroupWithMembers = Prisma.FamilyGroupGetPayload<{ include: typeof GROUP_INCLUDE }>
@@ -47,7 +48,10 @@ const isUniqueViolation = (e: unknown) =>
 
 @Injectable()
 export class FamilyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reminders: RemindersService,
+  ) {}
 
   async list(userId: string) {
     const groups = await this.prisma.familyGroup.findMany({
@@ -116,8 +120,14 @@ export class FamilyService {
         await tx.familyGroup.delete({ where: { id: groupId } })
         return
       }
-      // Задачи группы, назначенные уходящему, остаются без исполнителя
+      // Задачи группы, назначенные уходящему, остаются без исполнителя;
+      // получателем напоминаний становится автор — пересчитываем по его часовому поясу
+      const orphaned = await tx.task.findMany({
+        where: { groupId, assigneeId: userId },
+        select: { id: true },
+      })
       await tx.task.updateMany({ where: { groupId, assigneeId: userId }, data: { assigneeId: null } })
+      for (const t of orphaned) await this.reminders.rescheduleTask(t.id, tx)
       if (membership.group.ownerId === userId) {
         await tx.familyMember.update({ where: { id: heir.id }, data: { role: 'owner' } })
         await tx.familyGroup.update({ where: { id: groupId }, data: { ownerId: heir.userId } })

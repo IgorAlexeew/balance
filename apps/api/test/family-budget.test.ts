@@ -17,6 +17,28 @@ describe('family', () => {
     expect(task.assigneeId).toBeNull()
   })
 
+  it('после выхода исполнителя напоминание пересчитывается по часовому поясу автора', async () => {
+    const app = await testApp()
+    const anna = await createUser('Anna', 'Europe/Moscow')
+    const boris = await createUser('Boris', 'Asia/Vladivostok')
+    const group = await createGroup(anna.id, [boris.id])
+    const a = await clientFor(app, anna.id)
+    const b = await clientFor(app, boris.id)
+    const { body: task } = await a.post('/tasks', {
+      title: 'T',
+      groupId: group.id,
+      assigneeId: boris.id,
+      reminder: { type: 'daily', time: '09:00' },
+    })
+    // 09:00 во Владивостоке = 02:00 по Москве (UTC 23:00)
+    expect(new Date(task.reminder.nextFireAt).getUTCHours()).toBe(23)
+
+    await b.post(`/family/${group.id}/leave`)
+    const reminder = await db.reminder.findFirstOrThrow()
+    // Получатель теперь автор: 09:00 по Москве = 06:00 UTC
+    expect(reminder.nextFireAt!.getUTCHours()).toBe(6)
+  })
+
   it('вступление по коду; повторное — 409; удалить может только владелец', async () => {
     const app = await testApp()
     const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
@@ -112,6 +134,28 @@ describe('budget', () => {
 
       fetchMock.mockResolvedValueOnce(new Response('down', { status: 500 }))
       expect((await a.post('/budget/analysis', { month: '2026-10' })).status).toBe(502)
+    })
+
+    it('итоги в запросе к ИИ считаются по всем операциям месяца, а не по первой 1000', async () => {
+      const app = await testApp({ ai })
+      const anna = await createUser('Anna')
+      const a = await clientFor(app, anna.id)
+      const fetchMock = vi.fn(async () => Response.json({ choices: [{ message: { content: 'ok' } }] }))
+      vi.stubGlobal('fetch', fetchMock)
+      await db.transaction.createMany({
+        data: Array.from({ length: 1001 }, () => ({
+          type: 'expense',
+          amount: 10_000,
+          category: 'Кафе',
+          date: '2026-10-02',
+          userId: anna.id,
+        })),
+      })
+
+      expect((await a.post('/budget/analysis', { month: '2026-10' })).status).toBe(200)
+      const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+      expect(String(init.body)).toContain('Записей: 1001')
+      expect(String(init.body)).toContain('Расходы: 100100 руб.')
     })
   })
 })

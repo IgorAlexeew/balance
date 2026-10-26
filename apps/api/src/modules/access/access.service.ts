@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { forbidden } from '../../common/api-error'
+import { notFound } from '../../common/api-error'
 import { PrismaService } from '../../prisma/prisma.service'
 
 /** Проверки членства в семейных группах */
@@ -20,8 +20,9 @@ export class AccessService {
     return row !== null
   }
 
+  /** Чужая группа неотличима от несуществующей — 404, как и для записей */
   async assertMember(userId: string, groupId: string): Promise<void> {
-    if (!(await this.isMember(userId, groupId))) throw forbidden('Нет доступа к этой семейной группе')
+    if (!(await this.isMember(userId, groupId))) throw notFound('Группа не найдена')
   }
 
   /** Групповая запись доступна участникам группы, личная — только владельцу */

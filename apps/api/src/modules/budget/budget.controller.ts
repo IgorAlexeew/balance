@@ -13,6 +13,7 @@ import { AiService, BUDGET_ANALYST_PROMPT } from './ai.service'
 import { buildBudgetSummary } from './budget-summary'
 
 type BudgetQuery = z.output<typeof budgetQuerySchema>
+const MAX_PROMPT_ROWS = 1000
 const rub = (kopecks: number) => `${Math.round(kopecks / 100)} руб.`
 
 @Controller('budget')
@@ -46,15 +47,23 @@ export class BudgetController {
     @Body(new ZodPipe(budgetQuerySchema)) q: BudgetQuery,
   ): Promise<BudgetAnalysisDTO> {
     if (!this.ai.enabled) throw new ApiError(503, 'ИИ-анализ не настроен на сервере')
-    const rows = await this.prisma.transaction.findMany({
-      where: await this.transactions.monthWhere(user.id, q.month, q.groupId),
-      include: { user: { select: { name: true } } },
-      orderBy: { date: 'asc' },
-      take: 1000,
-    })
-    if (rows.length === 0) throw badRequest('За этот месяц нет записей для анализа')
+    const where = await this.transactions.monthWhere(user.id, q.month, q.groupId)
+    // Итоги — по всем операциям месяца; в промпт идут только первые MAX_PROMPT_ROWS строк
+    const [all, rows] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where,
+        select: { type: true, amount: true, category: true, date: true },
+      }),
+      this.prisma.transaction.findMany({
+        where,
+        include: { user: { select: { name: true } } },
+        orderBy: { date: 'asc' },
+        take: MAX_PROMPT_ROWS,
+      }),
+    ])
+    if (all.length === 0) throw badRequest('За этот месяц нет записей для анализа')
 
-    const summary = buildBudgetSummary(q.month, rows)
+    const summary = buildBudgetSummary(q.month, all)
     const lines = rows.map((t) =>
       [
         t.date,
@@ -75,7 +84,7 @@ export class BudgetController {
         {
           role: 'user',
           content:
-            `Месяц: ${q.month}. Записей: ${rows.length}. Доходы: ${rub(summary.totalIncome)}. ` +
+            `Месяц: ${q.month}. Записей: ${all.length}. Доходы: ${rub(summary.totalIncome)}. ` +
             `Расходы: ${rub(summary.totalExpense)}.\n\nОперации:\n${lines.join('\n')}`,
         },
       ])
