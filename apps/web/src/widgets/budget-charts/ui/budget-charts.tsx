@@ -15,7 +15,8 @@ import type { BudgetSummaryDTO } from '@balance/contracts'
 import { fmtDayMonth, formatMoney, formatMoneyShort } from '@/shared/lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 
-const PIE_COLORS = ['#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#14b8a6', '#f97316', '#06b6d4', '#84cc16']
+/** Оттенки неба, розы и сланца из палитры «Баланса» */
+const PIE_COLORS = ['#F39BBF', '#6EBBF0', '#B23A6E', '#1D6FA8', '#F8C6DA', '#A9D6F6', '#4A505C', '#9AA1AD']
 const TOP_CATEGORIES = 7
 
 interface PieDatum {
@@ -38,7 +39,7 @@ function buildPieData(summary: BudgetSummaryDTO): PieDatum[] {
 
 function TooltipBox({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-background px-3 py-2 text-xs shadow-sm">
+    <div className="glass-strong rounded-xl px-3 py-2 text-xs">
       <div className="font-medium">{title}</div>
       <div className="text-muted-foreground">{value}</div>
     </div>
@@ -52,7 +53,7 @@ export function BudgetCharts({ summary }: { summary: BudgetSummaryDTO }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-5">
-      <Card className="rounded-xl border shadow-sm lg:col-span-2">
+      <Card className="lg:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Tags className="size-4.5 text-primary" />
@@ -97,7 +98,7 @@ export function BudgetCharts({ summary }: { summary: BudgetSummaryDTO }) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-xl border shadow-sm lg:col-span-3">
+      <Card className="lg:col-span-3">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <TrendingDown className="size-4.5 text-primary" />
@@ -107,7 +108,12 @@ export function BudgetCharts({ summary }: { summary: BudgetSummaryDTO }) {
         <CardContent className="pb-4">
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={summary.byDay} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" strokeOpacity={0.3} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="currentColor"
+                strokeOpacity={0.12}
+              />
               <XAxis
                 dataKey="day"
                 ticks={dayTicks}
@@ -117,7 +123,7 @@ export function BudgetCharts({ summary }: { summary: BudgetSummaryDTO }) {
                 tick={{ fontSize: 11, fill: 'currentColor' }}
               />
               <YAxis
-                width={52}
+                width={64}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 11, fill: 'currentColor' }}
@@ -137,9 +143,10 @@ export function BudgetCharts({ summary }: { summary: BudgetSummaryDTO }) {
                 type="monotone"
                 dataKey="expense"
                 name="Расходы"
-                stroke="#f43f5e"
+                stroke="var(--rose)"
                 strokeWidth={2}
-                fill="#f43f5e33"
+                fill="var(--rose)"
+                fillOpacity={0.25}
               />
             </AreaChart>
           </ResponsiveContainer>

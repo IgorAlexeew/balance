@@ -66,7 +66,7 @@ export function CalendarMonth({
   }
 
   return (
-    <Card className="rounded-xl border shadow-sm">
+    <Card>
       <CardContent className="p-2 sm:p-4">
         <div className="grid grid-cols-7">
           {WEEKDAY_SHORT.map((label) => (
@@ -145,7 +145,7 @@ export function CalendarMonth({
                 {deadlineTitle && (
                   <span
                     title={`Задача: ${deadlineTitle}`}
-                    className="w-full truncate rounded border-l-2 border-amber-400 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+                    className="w-full truncate rounded-md bg-sky/25 px-1.5 py-0.5 text-[11px] text-sky-ink"
                   >
                     Задача: {deadlineTitle}
                   </span>
@@ -163,7 +163,7 @@ export function CalendarMonth({
             Событие
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="size-2 rounded-[2px] bg-amber-400" />
+            <span className="size-2 rounded-full bg-sky" />
             Дедлайн задачи
           </span>
         </div>

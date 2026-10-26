@@ -1,0 +1,15 @@
+{
+  "name": "Баланс",
+  "short_name": "Баланс",
+  "description": "Задачи, семейный бюджет и общий календарь",
+  "lang": "ru",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EEF0F3",
+  "theme_color": "#EEF0F3",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

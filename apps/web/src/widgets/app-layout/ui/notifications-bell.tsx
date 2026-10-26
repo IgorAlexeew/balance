@@ -19,13 +19,13 @@ export function NotificationsBell() {
         <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Уведомления">
           <Bell className="size-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+            <span className="absolute -top-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-rose px-1 text-[10px] font-semibold text-[#111318]">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 rounded-xl p-0 sm:w-96">
+      <PopoverContent align="end" className="w-80 p-0 sm:w-96">
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
           <div className="text-sm font-semibold">Уведомления</div>
           <div className="flex items-center gap-1">

@@ -44,13 +44,13 @@ const TYPE_OPTIONS = [
     value: 'expense',
     label: 'Расход',
     icon: TrendingDown,
-    active: 'border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
+    active: 'border-rose bg-rose/25 text-rose-ink',
   },
   {
     value: 'income',
     label: 'Доход',
     icon: TrendingUp,
-    active: 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    active: 'border-sky bg-sky/25 text-sky-ink',
   },
 ] as const
 

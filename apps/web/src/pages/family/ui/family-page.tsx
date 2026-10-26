@@ -32,7 +32,7 @@ function GroupCard({
   )
 
   return (
-    <Card className="rounded-xl border shadow-sm">
+    <Card className="py-0">
       <CardContent className="space-y-4 p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -95,7 +95,7 @@ export function FamilyPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Семейные группы</h1>
+        <h1 className="text-2xl font-medium tracking-tight">Семейные группы</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Общие задачи, бюджет и календарь для всей семьи
         </p>
@@ -113,7 +113,7 @@ export function FamilyPage() {
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <Card className="rounded-xl border py-0 shadow-sm">
+        <Card className="py-0">
           <EmptyState
             icon={Users}
             title="У вас пока нет семейных групп"

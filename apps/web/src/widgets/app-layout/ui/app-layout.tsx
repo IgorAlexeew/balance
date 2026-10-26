@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, LayoutDashboard, ListTodo, LogOut, Users, Wallet } from 'lucide-react'
+import { CalendarDays, LayoutDashboard, ListTodo, LogOut, Users, Wallet } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
 import { useViewer } from '@/entities/session'
 import { useLogout } from '@/features/auth'
@@ -10,6 +10,7 @@ import { cn } from '@/shared/lib/cn'
 import { routes } from '@/shared/config'
 import { initials } from '@/shared/lib/format'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { BrandMark } from '@/shared/ui/brand-mark'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,14 +29,6 @@ const NAV_ITEMS = [
   { to: routes.family, label: 'Семья', icon: Users },
 ]
 
-function Logo({ className }: { className?: string }) {
-  return (
-    <div className={cn('grid place-items-center rounded-xl bg-primary text-primary-foreground', className)}>
-      <CheckCircle2 className="size-5" />
-    </div>
-  )
-}
-
 function UserMenu() {
   const { data: user } = useViewer()
   const logout = useLogout()
@@ -47,9 +40,9 @@ function UserMenu() {
           className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Меню пользователя"
         >
-          <Avatar className="size-9 border">
+          <Avatar className="size-10 border border-glass-border">
             {user?.image ? <AvatarImage src={user.image} alt="" /> : null}
-            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+            <AvatarFallback className="bg-sky/25 text-sm font-semibold text-sky-ink">
               {initials(user?.name)}
             </AvatarFallback>
           </Avatar>
@@ -78,16 +71,16 @@ export function AppLayout() {
   useSyncTimezone()
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground lg:flex">
-        <div className="flex h-16 items-center gap-2.5 border-b px-5">
-          <Logo className="size-9" />
+    <div className="flex min-h-screen gap-6 lg:p-6">
+      <aside className="glass sticky top-6 hidden h-[calc(100vh-3rem)] w-64 shrink-0 flex-col rounded-glass p-5 text-sidebar-foreground lg:flex">
+        <div className="flex items-center gap-3 px-2 pt-1 pb-6">
+          <BrandMark />
           <div>
-            <div className="leading-tight font-bold">LifeBalance</div>
-            <div className="text-[11px] text-muted-foreground">баланс жизни</div>
+            <div className="text-xl leading-tight font-medium">Баланс</div>
+            <div className="text-xs text-muted-foreground">дела и семья</div>
           </div>
         </div>
-        <nav className="flex-1 space-y-1 px-3 py-4" aria-label="Основная навигация">
+        <nav className="flex-1 space-y-1.5" aria-label="Основная навигация">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
@@ -95,10 +88,8 @@ export function AppLayout() {
               end={item.to === routes.dashboard}
               className={({ isActive }) =>
                 cn(
-                  'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                  'flex min-h-11 w-full items-center gap-3 rounded-[0.875rem] px-3.5 text-[15px] font-medium transition-colors',
+                  isActive ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-sidebar-accent',
                 )
               }
             >
@@ -110,11 +101,11 @@ export function AppLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-          <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-3 sm:px-5">
-            <Logo className="mr-1 size-8 lg:hidden" />
+        <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 lg:static lg:px-0 lg:pt-0">
+          <div className="glass mx-auto flex h-16 w-full max-w-6xl items-center gap-2 rounded-glass px-3 sm:px-4 lg:h-auto lg:border-0 lg:bg-transparent lg:px-1 lg:py-1 lg:shadow-none lg:backdrop-blur-none">
+            <BrandMark className="mr-1 size-9 lg:hidden" />
             <GroupSwitcher />
-            <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+            <div className="ml-auto flex items-center gap-1 sm:gap-2">
               <ThemeToggle />
               <NotificationsBell />
               <UserMenu />
@@ -122,15 +113,15 @@ export function AppLayout() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-5 pb-24 sm:px-5 sm:py-6 lg:pb-8">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-5 pb-32 sm:px-5 sm:py-6 lg:px-0 lg:pb-8">
           <Outlet />
         </main>
 
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+          className="glass fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 rounded-glass lg:hidden"
           aria-label="Мобильная навигация"
         >
-          <div className="grid h-16 grid-cols-5">
+          <div className="grid h-[4.5rem] grid-cols-5">
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
@@ -139,12 +130,16 @@ export function AppLayout() {
                 className={({ isActive }) =>
                   cn(
                     'flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
-                    isActive ? 'text-primary' : 'text-muted-foreground',
+                    isActive ? 'font-semibold text-foreground' : 'text-muted-foreground',
                   )
                 }
               >
-                <item.icon className="size-5" />
-                {item.label}
+                {({ isActive }) => (
+                  <>
+                    <item.icon className="size-5.5" strokeWidth={isActive ? 2.4 : 2} />
+                    {item.label}
+                  </>
+                )}
               </NavLink>
             ))}
           </div>

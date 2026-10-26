@@ -27,7 +27,7 @@ export function DeleteTransactionButton({ transaction }: { transaction: Transact
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400"
+          className="size-8 text-muted-foreground hover:text-rose-ink"
           aria-label="Удалить запись"
           disabled={remove.isPending}
         >

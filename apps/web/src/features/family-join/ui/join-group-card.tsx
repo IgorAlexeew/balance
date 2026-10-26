@@ -28,7 +28,7 @@ export function JoinGroupCard() {
   })
 
   return (
-    <Card className="rounded-xl border shadow-sm">
+    <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <UserPlus className="size-4.5 text-primary" />

@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
-import { CalendarDays, CheckCircle2, ListTodo, Users, Wallet } from 'lucide-react'
+import { CalendarDays, ListTodo, Users, Wallet } from 'lucide-react'
 import { Navigate, useSearchParams } from 'react-router'
 import { useAppConfig, useViewer } from '@/entities/session'
 import { DemoLoginForm, YandexLoginButton } from '@/features/auth'
 import { routes } from '@/shared/config'
+import { BrandMark } from '@/shared/ui/brand-mark'
 import { Card, CardContent } from '@/shared/ui/card'
 
 const FEATURES = [
@@ -48,7 +49,7 @@ export function LoginPage() {
   const demoEnabled = config?.auth.demo ?? false
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-emerald-50 via-background to-teal-50 dark:from-emerald-950/40 dark:via-background dark:to-teal-950/30">
+    <div className="flex min-h-screen flex-col">
       <main className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-16">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -57,15 +58,13 @@ export function LoginPage() {
           className="order-2 lg:order-1"
         >
           <div className="mb-6 flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-emerald-600/20">
-              <CheckCircle2 className="size-7" />
-            </div>
+            <BrandMark className="size-14" />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">LifeBalance</h1>
+              <h1 className="text-2xl font-medium tracking-tight">Баланс</h1>
               <p className="text-sm text-muted-foreground">Баланс задач, бюджета и семьи</p>
             </div>
           </div>
-          <h2 className="mb-4 text-3xl leading-tight font-bold sm:text-4xl">
+          <h2 className="mb-4 text-3xl leading-tight font-medium sm:text-5xl">
             Одна площадка для задач, бюджета и семейных планов
           </h2>
           <p className="mb-8 max-w-lg text-muted-foreground">
@@ -73,9 +72,9 @@ export function LoginPage() {
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {FEATURES.map((f) => (
-              <Card key={f.title} className="h-full rounded-xl border shadow-sm">
-                <CardContent className="gap-3 p-4">
-                  <div className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Card key={f.title} className="h-full gap-0 py-0">
+                <CardContent className="gap-3 p-5">
+                  <div className="grid size-10 place-items-center rounded-xl bg-sky/25 text-sky-ink">
                     <f.icon className="size-5" />
                   </div>
                   <div className="mt-2 text-sm font-medium">{f.title}</div>
@@ -92,7 +91,7 @@ export function LoginPage() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="order-1 lg:order-2"
         >
-          <Card className="rounded-2xl border shadow-xl shadow-emerald-900/5">
+          <Card className="py-0">
             <CardContent className="space-y-6 p-6 sm:p-8">
               <div>
                 <h3 className="mb-1 text-xl font-semibold">Вход в приложение</h3>
@@ -100,7 +99,7 @@ export function LoginPage() {
               </div>
 
               {error && (
-                <div className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+                <div className="rounded-2xl bg-rose/25 p-3 text-sm text-rose-ink">
                   {ERRORS[error] ?? 'Не удалось войти'}
                 </div>
               )}

@@ -35,9 +35,9 @@ import { Skeleton } from '@/shared/ui/skeleton'
 const fadeUp = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
 const TONES = {
   default: 'text-foreground',
-  rose: 'text-rose-600 dark:text-rose-400',
-  emerald: 'text-emerald-600 dark:text-emerald-400',
-  amber: 'text-amber-600 dark:text-amber-400',
+  rose: 'text-rose-ink',
+  sky: 'text-sky-ink',
+  inverted: 'text-primary-foreground',
 }
 
 function StatCard(props: {
@@ -53,17 +53,43 @@ function StatCard(props: {
     <motion.div variants={fadeUp}>
       <Link
         to={to}
-        className="block rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="block rounded-glass focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
-        <Card className="rounded-xl border shadow-sm transition-shadow hover:shadow-md">
+        <Card
+          className={cn(
+            'py-0 transition-transform hover:-translate-y-0.5',
+            tone === 'inverted' && 'border-transparent bg-primary text-primary-foreground',
+          )}
+        >
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <div className="text-xs font-medium text-muted-foreground">{title}</div>
-                <div className={cn('mt-1.5 truncate text-2xl font-bold', TONES[tone])}>{value}</div>
-                <div className="mt-1 truncate text-[11px] text-muted-foreground">{hint}</div>
+                <div className={cn('text-sm', tone === 'inverted' ? 'opacity-75' : 'text-muted-foreground')}>
+                  {title}
+                </div>
+                <div
+                  className={cn(
+                    'mt-1.5 truncate text-2xl font-medium tracking-tight sm:text-3xl',
+                    TONES[tone],
+                  )}
+                >
+                  {value}
+                </div>
+                <div
+                  className={cn(
+                    'mt-1 truncate text-xs',
+                    tone === 'inverted' ? 'opacity-75' : 'text-muted-foreground',
+                  )}
+                >
+                  {hint}
+                </div>
               </div>
-              <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              <div
+                className={cn(
+                  'hidden size-10 shrink-0 place-items-center rounded-xl sm:grid',
+                  tone === 'inverted' ? 'bg-white/12' : 'bg-foreground/5',
+                )}
+              >
                 <Icon className="size-4.5" />
               </div>
             </div>
@@ -83,7 +109,7 @@ function Section(props: {
   const { title, icon: Icon, link, children } = props
   return (
     <motion.div variants={fadeUp} initial="hidden" animate="visible">
-      <Card className="rounded-xl border shadow-sm">
+      <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -127,14 +153,10 @@ function TransactionLine({ t }: { t: TransactionDTO }) {
       <div
         className={cn(
           'flex shrink-0 items-center gap-1 text-sm font-semibold',
-          income ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground',
+          income ? 'text-sky-ink' : 'text-rose-ink',
         )}
       >
-        {income ? (
-          <TrendingUp className="size-3.5" />
-        ) : (
-          <TrendingDown className="size-3.5 text-muted-foreground" />
-        )}
+        {income ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
         {income ? '+' : '−'}
         {formatMoney(t.amount)}
       </div>
@@ -170,10 +192,10 @@ export function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">
             {greeting(now)}, {viewer?.name?.split(' ')[0] ?? 'друг'}!
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground first-letter:uppercase">{todayTitle()}</p>
+          <p className="mt-1 text-[15px] text-muted-foreground first-letter:uppercase">{todayTitle()}</p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" className="gap-1.5" onClick={() => taskDialog.openWith()}>
@@ -205,7 +227,7 @@ export function DashboardPage() {
           value={String(overdueTasks.length)}
           hint={overdueTasks.length > 0 ? 'Требуют внимания' : 'Всё под контролем'}
           icon={AlarmClock}
-          tone={overdueTasks.length > 0 ? 'rose' : 'emerald'}
+          tone={overdueTasks.length > 0 ? 'rose' : 'sky'}
           to={routes.tasks}
         />
         <StatCard
@@ -217,7 +239,7 @@ export function DashboardPage() {
               : 'Доходы и расходы'
           }
           icon={CircleDollarSign}
-          tone={summary ? (summary.balance >= 0 ? 'emerald' : 'rose') : 'default'}
+          tone="inverted"
           to={routes.budget}
         />
         <StatCard
@@ -225,7 +247,7 @@ export function DashboardPage() {
           value={String(todayEvents.length)}
           hint={todayEvents[0]?.title ?? 'Ближайшие события'}
           icon={CalendarDays}
-          tone="amber"
+          tone="rose"
           to={routes.calendar}
         />
       </motion.div>
@@ -268,7 +290,7 @@ export function DashboardPage() {
                       <div className="text-[10px] font-medium text-muted-foreground uppercase">
                         {new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(d)}
                       </div>
-                      <div className="text-lg leading-none font-bold">{d.getDate()}</div>
+                      <div className="text-lg leading-none font-medium">{d.getDate()}</div>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{e.title}</div>

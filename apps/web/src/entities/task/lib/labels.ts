@@ -9,10 +9,10 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
 }
 
 export const PRIORITY_CHIP_CLASSES: Record<TaskPriority, string> = {
-  low: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-  medium: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  high: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
-  urgent: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+  low: 'bg-foreground/6 text-muted-foreground',
+  medium: 'bg-sky/25 text-sky-ink',
+  high: 'bg-rose/25 text-rose-ink',
+  urgent: 'bg-rose-ink text-white dark:text-[#111318]',
 }
 
 export const REMINDER_TYPE_LABELS: Record<ReminderType, string> = {

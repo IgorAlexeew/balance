@@ -26,7 +26,7 @@ export function CalendarPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Календарь</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Календарь</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {group ? `События группы «${group.name}»` : 'Личные события'}
           </p>

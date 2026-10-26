@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/onest';
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
@@ -7,8 +7,15 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Onest Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Смысловые акценты: небо — задачи и доходы, роза — события, расходы и просрочка */
+  --color-sky: var(--sky);
+  --color-sky-ink: var(--sky-ink);
+  --color-rose: var(--rose);
+  --color-rose-ink: var(--rose-ink);
+  --color-glass: var(--glass);
+  --color-glass-border: var(--glass-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -42,82 +49,159 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-glass: 1.75rem;
 }
 
+/* Светлая тема «Баланса»: туман, графит, небо и роза поверх матового стекла */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.596 0.145 163.225);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.966 0.04 155.5);
-  --accent-foreground: oklch(0.377 0.074 163);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.696 0.17 162.48);
-  --chart-1: oklch(0.696 0.17 162.48);
-  --chart-2: oklch(0.769 0.188 70.08);
-  --chart-3: oklch(0.645 0.246 16.439);
-  --chart-4: oklch(0.606 0.25 292.717);
-  --chart-5: oklch(0.7 0.12 180);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.596 0.145 163.225);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 1rem;
+  --sky: #6ebbf0;
+  --sky-ink: #1d6fa8;
+  --rose: #f39bbf;
+  --rose-ink: #b23a6e;
+  --glass: rgb(255 255 255 / 0.55);
+  --glass-strong: rgb(255 255 255 / 0.8);
+  --glass-border: rgb(255 255 255 / 0.85);
+  --glass-shadow: 0 20px 40px -24px rgb(17 19 24 / 0.22);
+  --blob-opacity: 0.5;
+
+  --background: #eef0f3;
+  --foreground: #111318;
+  --card: var(--glass);
+  --card-foreground: #111318;
+  --popover: rgb(248 249 251 / 0.92);
+  --popover-foreground: #111318;
+  --primary: #111318;
+  --primary-foreground: #ffffff;
+  --secondary: rgb(255 255 255 / 0.7);
+  --secondary-foreground: #111318;
+  --muted: rgb(17 19 24 / 0.05);
+  --muted-foreground: #4a505c;
+  --accent: rgb(17 19 24 / 0.06);
+  --accent-foreground: #111318;
+  --destructive: #b23a6e;
+  --border: rgb(17 19 24 / 0.08);
+  --input: rgb(17 19 24 / 0.12);
+  --ring: #6ebbf0;
+  --chart-1: #6ebbf0;
+  --chart-2: #f39bbf;
+  --chart-3: #1d6fa8;
+  --chart-4: #b23a6e;
+  --chart-5: #4a505c;
+  --sidebar: var(--glass);
+  --sidebar-foreground: #111318;
+  --sidebar-primary: #111318;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgb(17 19 24 / 0.06);
+  --sidebar-accent-foreground: #111318;
+  --sidebar-border: var(--glass-border);
+  --sidebar-ring: #6ebbf0;
 }
 
+/* Тёмная тема: то же стекло, но дымчатое, на графите */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.696 0.17 162.48);
-  --primary-foreground: oklch(0.262 0.051 172.552);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.29 0.045 160);
-  --accent-foreground: oklch(0.85 0.1 160);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.696 0.17 162.48);
-  --chart-1: oklch(0.696 0.17 162.48);
-  --chart-2: oklch(0.769 0.188 70.08);
-  --chart-3: oklch(0.645 0.246 16.439);
-  --chart-4: oklch(0.606 0.25 292.717);
-  --chart-5: oklch(0.7 0.12 180);
-  --sidebar: oklch(0.185 0.01 160);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.696 0.17 162.48);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sky: #6ebbf0;
+  --sky-ink: #8fcbf5;
+  --rose: #f39bbf;
+  --rose-ink: #f6b3ce;
+  --glass: rgb(28 31 38 / 0.55);
+  --glass-strong: rgb(28 31 38 / 0.85);
+  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-shadow: 0 20px 40px -24px rgb(0 0 0 / 0.6);
+  --blob-opacity: 0.22;
+
+  --background: #0e1014;
+  --foreground: #eef0f3;
+  --card: var(--glass);
+  --card-foreground: #eef0f3;
+  --popover: rgb(24 27 33 / 0.94);
+  --popover-foreground: #eef0f3;
+  --primary: #eef0f3;
+  --primary-foreground: #111318;
+  --secondary: rgb(255 255 255 / 0.08);
+  --secondary-foreground: #eef0f3;
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: #a3a9b5;
+  --accent: rgb(255 255 255 / 0.08);
+  --accent-foreground: #eef0f3;
+  --destructive: #f39bbf;
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.14);
+  --ring: #6ebbf0;
+  --chart-1: #6ebbf0;
+  --chart-2: #f39bbf;
+  --chart-3: #8fcbf5;
+  --chart-4: #f6b3ce;
+  --chart-5: #a3a9b5;
+  --sidebar: var(--glass);
+  --sidebar-foreground: #eef0f3;
+  --sidebar-primary: #eef0f3;
+  --sidebar-primary-foreground: #111318;
+  --sidebar-accent: rgb(255 255 255 / 0.08);
+  --sidebar-accent-foreground: #eef0f3;
+  --sidebar-border: var(--glass-border);
+  --sidebar-ring: #6ebbf0;
+}
+
+/* Матовое стекло: полупрозрачный белый, размытие и светлая кромка */
+@utility glass {
+  background-color: var(--glass);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+}
+
+@utility glass-strong {
+  background-color: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply min-h-screen bg-background text-foreground;
+    font-weight: 400;
+  }
+  /* Размытые пятна неба и розы под стеклом: отдельный неподвижный слой за всем интерфейсом */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto;
+    /* Высота «большого» экрана: на телефоне фон не обрывается, когда прячется адресная строка */
+    height: 100vh;
+    height: 100lvh;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        circle 40rem at -6% -12%,
+        color-mix(in oklab, var(--sky) calc(var(--blob-opacity) * 110%), transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        circle 38rem at 106% 48%,
+        color-mix(in oklab, var(--rose) calc(var(--blob-opacity) * 100%), transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        circle 34rem at 38% 115%,
+        color-mix(in oklab, var(--sky) calc(var(--blob-opacity) * 70%), transparent),
+        transparent 70%
+      );
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
   }
 }
