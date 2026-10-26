@@ -122,7 +122,7 @@ flowchart LR
 
 | Модуль        | Что делает                                                                                     | Зависит от                   |
 | ------------- | ---------------------------------------------------------------------------------------------- | ---------------------------- |
-| Access        | `memberGroupIds`, `isMember`, `assertMember` (403), `canAccess` (личное/групповое)             | Prisma                       |
+| Access        | `memberGroupIds`, `isMember`, `assertMember` (404), `canAccess` (личное/групповое)             | Prisma                       |
 | Auth          | `/config`, `/session`, вход Яндекс/демо, выход; сессии; ежечасная очистка                      | Prisma, Config, `seed/demo`  |
 | Me            | чтение и изменение профиля (имя, часовой пояс); при смене зоны — пересчёт напоминаний          | Prisma, Reminders            |
 | Reminders     | расчёт `nextFireAt`, пересчёт при изменении задачи/пользователя, тик планировщика              | Prisma                       |
@@ -316,9 +316,9 @@ flowchart TD
 
 - **Чужая запись по id даёт 404, а не 403** — так нельзя узнать, существует ли запись с этим id.
 - **Списки и создание в группе** проверяют членство через `AccessService.assertMember`, и здесь
-  ответ — **403** «Нет доступа к этой семейной группе» (существование группы при этом раскрывается).
-- В `FamilyService` для операций с группой, где пользователь не участник, — **404** «Группа не найдена»;
-  действия только для владельца (новый код, удаление) — 403.
+  ответ — **404** «Группа не найдена», как и в `FamilyService`: чужая группа неотличима от несуществующей.
+  Действия только для владельца (новый код, удаление) — 403.
+- Перенести групповую задачу в личные может только её автор, иначе 403.
 - Исполнителем задачи может быть только участник группы задачи; у личной задачи исполнителя нет (400).
 - Роли `owner`/`member` влияют только на управление группой: новый код приглашения и удаление
   группы — только владелец. Создавать, менять и удалять любые групповые записи может любой участник.
@@ -565,9 +565,9 @@ sequenceDiagram
 
 | Метод  | Путь             | Доступ | Вход                                                                                          | Ответ          | Ошибки                                                                                   |
 | ------ | ---------------- | ------ | --------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------- |
-| GET    | `/api/tasks`     | сессия | query `taskListQuerySchema`: `status` all/todo/done/overdue, `scope` personal/all/`<groupId>` | `TaskDTO[]`    | 403 не участник группы из `scope`                                                        |
-| POST   | `/api/tasks`     | сессия | `taskCreateSchema`                                                                            | 201 `TaskDTO`  | 400 исполнитель вне группы / у личной задачи; напоминание от срока без срока; 403 группа |
-| PATCH  | `/api/tasks/:id` | сессия | `idSchema`, `taskUpdateSchema` (все поля необязательны, `null` — очистить)                    | `TaskDTO`      | 404 нет доступа; 400 как при создании; 403 новая группа                                  |
+| GET    | `/api/tasks`     | сессия | query `taskListQuerySchema`: `status` all/todo/done/overdue, `scope` personal/all/`<groupId>` | `TaskDTO[]`    | 404 не участник группы из `scope`                                                        |
+| POST   | `/api/tasks`     | сессия | `taskCreateSchema`                                                                            | 201 `TaskDTO`  | 400 исполнитель вне группы / у личной задачи; напоминание от срока без срока; 404 группа |
+| PATCH  | `/api/tasks/:id` | сессия | `idSchema`, `taskUpdateSchema` (все поля необязательны, `null` — очистить)                    | `TaskDTO`      | 404 нет доступа; 400 как при создании; 404 новая группа; 403 в личные — не автор         |
 | DELETE | `/api/tasks/:id` | сессия | `idSchema`                                                                                    | `{ ok: true }` | 404                                                                                      |
 
 `scope=personal` — личные задачи автора (по умолчанию), `all` — личные и всех групп пользователя,
@@ -578,8 +578,8 @@ sequenceDiagram
 
 | Метод  | Путь                    | Доступ | Вход                                                                                                                        | Ответ                | Ошибки     |
 | ------ | ----------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- | -------------------- | ---------- |
-| GET    | `/api/transactions`     | сессия | query `budgetQuerySchema`: `month` YYYY-MM, `groupId?` (пусто — личные)                                                     | `TransactionDTO[]`   | 403 группа |
-| POST   | `/api/transactions`     | сессия | `transactionCreateSchema`: `type`, `amount` (копейки, целое > 0), `category`, `description?`, `date` YYYY-MM-DD, `groupId?` | 201 `TransactionDTO` | 403 группа |
+| GET    | `/api/transactions`     | сессия | query `budgetQuerySchema`: `month` YYYY-MM, `groupId?` (пусто — личные)                                                     | `TransactionDTO[]`   | 404 группа |
+| POST   | `/api/transactions`     | сессия | `transactionCreateSchema`: `type`, `amount` (копейки, целое > 0), `category`, `description?`, `date` YYYY-MM-DD, `groupId?` | 201 `TransactionDTO` | 404 группа |
 | PATCH  | `/api/transactions/:id` | сессия | `idSchema`, `transactionUpdateSchema` (без `groupId`)                                                                       | `TransactionDTO`     | 404        |
 | DELETE | `/api/transactions/:id` | сессия | `idSchema`                                                                                                                  | `{ ok: true }`       | 404        |
 
@@ -589,8 +589,8 @@ sequenceDiagram
 
 | Метод | Путь                   | Доступ | Вход                      | Ответ                   | Ошибки                                                                               | Лимит                                    |
 | ----- | ---------------------- | ------ | ------------------------- | ----------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------- |
-| GET   | `/api/budget/summary`  | сессия | query `budgetQuerySchema` | `BudgetSummaryDTO`      | 403 группа                                                                           | —                                        |
-| POST  | `/api/budget/analysis` | сессия | тело `budgetQuerySchema`  | 200 `BudgetAnalysisDTO` | 503 ИИ не настроен; 400 нет записей; 403 группа; 502 ошибка или пустой ответ ИИ; 429 | `@Throttle` **10 в час** на пользователя |
+| GET   | `/api/budget/summary`  | сессия | query `budgetQuerySchema` | `BudgetSummaryDTO`      | 404 группа                                                                           | —                                        |
+| POST  | `/api/budget/analysis` | сессия | тело `budgetQuerySchema`  | 200 `BudgetAnalysisDTO` | 503 ИИ не настроен; 400 нет записей; 404 группа; 502 ошибка или пустой ответ ИИ; 429 | `@Throttle` **10 в час** на пользователя |
 
 Сводка: итоги дохода/расхода и баланс, категории по убыванию суммы, массив по дням месяца.
 ИИ-анализ отправляет провайдеру до 1000 операций месяца (дата, тип, сумма в рублях, категория,
@@ -601,8 +601,8 @@ sequenceDiagram
 
 | Метод  | Путь              | Доступ | Вход                                                                                                  | Ответ                  | Ошибки                           |
 | ------ | ----------------- | ------ | ----------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------- |
-| GET    | `/api/events`     | сессия | query `eventListQuerySchema`: `from`, `to` (ISO, `to > from`, не больше 400 дней), `groupId?`         | `CalendarEventDTO[]`   | 403 группа                       |
-| POST   | `/api/events`     | сессия | `eventCreateSchema`: `title`, `description?`, `start`, `end > start`, `allDay?`, `color?`, `groupId?` | 201 `CalendarEventDTO` | 403 группа                       |
+| GET    | `/api/events`     | сессия | query `eventListQuerySchema`: `from`, `to` (ISO, `to > from`, не больше 400 дней), `groupId?`         | `CalendarEventDTO[]`   | 404 группа                       |
+| POST   | `/api/events`     | сессия | `eventCreateSchema`: `title`, `description?`, `start`, `end > start`, `allDay?`, `color?`, `groupId?` | 201 `CalendarEventDTO` | 404 группа                       |
 | PATCH  | `/api/events/:id` | сессия | `idSchema`, `eventUpdateSchema` (без `groupId`)                                                       | `CalendarEventDTO`     | 404; 400 окончание раньше начала |
 | DELETE | `/api/events/:id` | сессия | `idSchema`                                                                                            | `{ ok: true }`         | 404                              |
 

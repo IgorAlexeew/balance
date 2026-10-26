@@ -51,6 +51,6 @@ describe('events', () => {
       (await b.get(`/events?${range}&groupId=${group.id}`)).body.map((x: { id: string }) => x.id),
     ).toEqual([shared.id])
     expect((await b.del(`/events/${shared.id}`)).status).toBe(200)
-    expect((await e.get(`/events?${range}&groupId=${group.id}`)).status).toBe(403)
+    expect((await e.get(`/events?${range}&groupId=${group.id}`)).status).toBe(404)
   })
 })

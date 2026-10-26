@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import type { Prisma } from '@prisma/client'
 import type { TaskFilter, taskCreateSchema, taskUpdateSchema } from '@balance/contracts'
 import type { z } from 'zod'
-import { badRequest, notFound } from '../../common/api-error'
+import { badRequest, forbidden, notFound } from '../../common/api-error'
 import { PrismaService } from '../../prisma/prisma.service'
 import { AccessService } from '../access/access.service'
 import { reminderData } from '../reminders/reminder-data'
@@ -93,6 +93,8 @@ export class TasksService {
     const groupId = input.groupId !== undefined ? input.groupId : existing.groupId
     if (input.groupId !== undefined && input.groupId !== existing.groupId) {
       if (input.groupId) await this.access.assertMember(userId, input.groupId)
+      else if (existing.createdById !== userId)
+        throw forbidden('Перенести задачу в личные может только автор')
       data.groupId = input.groupId
     }
     if (input.assigneeId !== undefined) {

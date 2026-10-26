@@ -36,7 +36,7 @@ describe('tasks', () => {
     expect(list.body.map((t: { title: string }) => t.title)).toEqual(['Купить хлеб'])
 
     const e = await clientFor(app, eve.id)
-    expect((await e.get(`/tasks?scope=${group.id}`)).status).toBe(403)
+    expect((await e.get(`/tasks?scope=${group.id}`)).status).toBe(404)
   })
 
   it('перенос в личные снимает исполнителя; completedAt не перезаписывается', async () => {
@@ -53,6 +53,19 @@ describe('tasks', () => {
     const done = await a.patch(`/tasks/${task.id}`, { status: 'done' })
     const again = await a.patch(`/tasks/${task.id}`, { status: 'done', title: 'T2' })
     expect(again.body.completedAt).toBe(done.body.completedAt)
+  })
+
+  it('перенести групповую задачу в личные может только её автор', async () => {
+    const app = await testApp()
+    const [anna, boris] = await Promise.all([createUser('Anna'), createUser('Boris')])
+    const group = await createGroup(anna.id, [boris.id])
+    const a = await clientFor(app, anna.id)
+    const b = await clientFor(app, boris.id)
+    const { body: task } = await a.post('/tasks', { title: 'T', groupId: group.id })
+
+    expect((await b.patch(`/tasks/${task.id}`, { groupId: null })).status).toBe(403)
+    expect((await b.get(`/tasks?scope=${group.id}`)).body).toHaveLength(1)
+    expect((await a.patch(`/tasks/${task.id}`, { groupId: null })).body.groupId).toBeNull()
   })
 
   it('напоминание «в срок» без срока — 400', async () => {
