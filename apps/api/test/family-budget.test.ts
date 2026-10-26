@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { db } from './setup'
 import { clientFor, createGroup, createUser, testApp } from './helpers'
 
@@ -87,5 +87,31 @@ describe('budget', () => {
     const a = await clientFor(app, anna.id)
     const res = await a.post('/budget/analysis', { month: '2026-10' })
     expect(res.status).toBe(503)
+  })
+
+  describe('ИИ-анализ с подменённым провайдером', () => {
+    const ai = { url: 'https://ai.test/v1', apiKey: 'k', model: 'm' }
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('отправляет операции месяца и возвращает ответ; без записей — 400; ошибка провайдера — 502', async () => {
+      const app = await testApp({ ai })
+      const anna = await createUser('Anna')
+      const a = await clientFor(app, anna.id)
+      const fetchMock = vi.fn(async () => Response.json({ choices: [{ message: { content: ' Разбор ' } }] }))
+      vi.stubGlobal('fetch', fetchMock)
+
+      expect((await a.post('/budget/analysis', { month: '2026-10' })).status).toBe(400)
+
+      await a.post('/transactions', { type: 'expense', amount: 12_300, category: 'Кафе', date: '2026-10-02' })
+      const res = await a.post('/budget/analysis', { month: '2026-10' })
+      expect(res.body).toEqual({ analysis: 'Разбор' })
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+      expect(url).toBe('https://ai.test/v1/chat/completions')
+      expect(String(init.body)).toContain('Расходы: 123 руб.')
+      expect(String(init.body)).toContain('Кафе')
+
+      fetchMock.mockResolvedValueOnce(new Response('down', { status: 500 }))
+      expect((await a.post('/budget/analysis', { month: '2026-10' })).status).toBe(502)
+    })
   })
 })
