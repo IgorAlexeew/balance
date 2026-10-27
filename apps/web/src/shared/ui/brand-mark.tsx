@@ -1,10 +1,12 @@
 import { cn } from '@/shared/lib/cn'
 
-/** Иконка приложения B-black: розовый поток рисует «Б», голубой шар — чаша */
+/** Лого приложения: чёрное пятно из мазков, розовая капля краски, голубой шар */
 export function BrandMark({ className }: { className?: string }) {
   return (
     <img
-      src="/favicon.svg"
+      src="/logo.webp"
+      width={256}
+      height={256}
       alt=""
       aria-hidden="true"
       draggable={false}
