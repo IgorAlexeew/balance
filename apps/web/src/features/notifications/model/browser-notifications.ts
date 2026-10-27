@@ -29,7 +29,7 @@ export function useBrowserNotificationPermission() {
 export function showBrowserNotification(title: string, body: string) {
   if (getPermission() !== 'granted' || document.visibilityState === 'visible') return
   try {
-    new Notification(title, { body, icon: '/favicon.svg' })
+    new Notification(title, { body, icon: '/icon-192.png' })
   } catch {
     // На некоторых мобильных браузерах конструктор Notification недоступен
   }
