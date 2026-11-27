@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Баланс · Разобрать кладовку</title>
+  <link rel="stylesheet" href="demo.css">
+  <script src="drawn-outline.js" defer></script>
+  <script src="demo.js" defer></script>
+</head>
+<body>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true">
+    <defs>
+      <filter id="ink-edge" x="-10%" y="-20%" width="120%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency=".028 .049" numOctaves="1" seed="4" result="pressure"/>
+        <feDisplacementMap in="SourceGraphic" in2="pressure" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="ink"/>
+        <feGaussianBlur in="ink" stdDeviation=".44"/>
+      </filter>
+      <linearGradient id="invalid-outline-fill" x2="100%" y2="18%">
+        <stop stop-color="#f7b9c3" stop-opacity=".56"/><stop offset="1" stop-color="#f7bec7" stop-opacity=".53"/>
+      </linearGradient>
+      <linearGradient id="coral-outline-fill" x2="100%" y2="45%">
+        <stop stop-color="#e7616a"/><stop offset=".63" stop-color="#e96269"/><stop offset="1" stop-color="#e25865"/>
+      </linearGradient>
+      <g id="hover-hatch-lines">
+        <g fill="currentColor">
+          <path opacity=".5" d="M4 1C2.5 20 3.4 41 5.2 60q1.2 13-.2 21C5.4 64 2.2 50 1.7 31Q1.2 12 4 1Z"/>
+          <path opacity=".42" d="M15 10c-1.6 12 .9 24 .8 38q0 15-1.5 29c-.4-13 .2-23-.4-37C13 26 13 15 15 10Z"/>
+          <path opacity=".55" d="M28 2c-2.6 19-3.2 38-1.1 58q1.2 12 1.8 21c.8-13-.2-29-.5-45Q27.8 15 28 2Z"/>
+          <path opacity=".51" d="M45.5 20c-2.4 13-1.8 25-1.1 35q.5 11-.6 22C43 66 41.5 54 42 42q.4-15 3.5-22Z"/>
+          <path opacity=".45" d="M61 6c-1 9 1.4 20 2.4 34q1.5 17-.4 37c.1-16-.7-27-2.1-40Q58.9 14 61 6Z"/>
+        </g>
+        <g fill="none" stroke="currentColor" stroke-linecap="round">
+          <path opacity=".5" stroke-width=".8" d="M9 3c1.3 19-1 34 .3 53m.1 6 1.1 16"/>
+          <path opacity=".4" stroke-width="1.35" d="M21.4 4c-1 19-.5 34 .2 50"/>
+          <path opacity=".55" stroke-width="1.05" d="M35 7c.9 13-1.2 29-.4 45q.4 14 .8 27"/>
+          <path opacity=".32" stroke-width=".7" d="M40 2q-1.5 15-1.2 28M49 33q-.6 15 0 39"/>
+          <path opacity=".48" stroke-width="1.15" d="M54 10c-.9 19 .6 39 .9 62"/>
+          <path opacity=".48" stroke-width=".82" d="M69 2c.7 13-.5 29 .4 44m.1 6q.6 12 0 26"/>
+        </g>
+      </g>
+      <pattern id="hover-hatch" width="74" height="82" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
+        <rect width="74" height="82" fill="#d9eff7"/>
+        <use href="#hover-hatch-lines" color="#68b4cd"/>
+      </pattern>
+      <pattern id="hover-hatch-light" href="#hover-hatch">
+        <use href="#hover-hatch-lines" color="#fff" opacity=".32"/>
+      </pattern>
+      <pattern id="hover-hatch-gray" href="#hover-hatch">
+        <rect width="74" height="82" fill="#efeeec"/>
+        <use href="#hover-hatch-lines" color="#807d75"/>
+      </pattern>
+      <pattern id="add-hatch" href="#hover-hatch">
+        <use href="#hover-hatch-lines" color="#68b4cd"/>
+      </pattern>
+      <radialGradient id="add-hatch-fade">
+        <stop offset=".18" stop-color="#fff"/>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+      <mask id="add-hatch-center" maskContentUnits="objectBoundingBox">
+        <rect width="1" height="1" fill="url(#add-hatch-fade)"/>
+      </mask>
+      <pattern id="task-in-progress-fill" width="1" height="1" viewBox="0 0 360 58" preserveAspectRatio="none">
+        <rect width="360" height="58" fill="#135780"/>
+        <g fill="#fff" opacity=".30">
+          <path d="M-4 53C2 38 18 13 21 4C21 14 9 38-4 58ZM7 61C16 49 23 36 29 27C28 38 16 55 10 61ZM21 61C24 53 36 35 41 21C42 32 29 55 25 61Z"/>
+          <path opacity=".85" d="M34 60C42 50 45 40 52 30C53 39 43 52 39 60ZM58 57C62 50 68 41 72 30C73 40 65 52 63 57Z"/>
+          <g fill="none" stroke="#fff" stroke-linecap="round">
+            <path stroke-width="1.65" d="M-1 29Q9 15 12 5M13 46Q26 28 32 10M25 45Q35 28 40 16"/>
+            <path opacity=".72" stroke-width=".9" d="M46 54Q53 45 57 35M55 53Q62 43 66 34M72 54Q78 46 80 41"/>
+            <path opacity=".58" d="M82 53Q87 46 88 42M93 53l3-6"/>
+          </g>
+        </g>
+      </pattern>
+      <pattern id="task-next-fill" width="1" height="1" viewBox="0 0 360 58" preserveAspectRatio="none">
+        <rect width="360" height="58" fill="#c4e8f8"/>
+        <g fill="#064977" opacity=".18">
+          <path d="M138 6C178 7 208 2 254-1C221 5 177 9 138 6Z"/>
+          <path opacity=".8" d="M191 11C237 8 277 8 324-1C305 6 244 13 191 11Z"/>
+          <path d="M72 58C113 54 169 51 225 54C175 56 120 55 72 61Z"/>
+          <path opacity=".78" d="M141 57C178 53 250 55 307 49C291 53 234 59 141 59Z"/>
+          <path d="M310 58C327 56 351 49 363 43L365 47C348 54 332 58 310 58Z"/>
+          <g fill="none" stroke="#064977" stroke-linecap="round">
+            <path opacity=".68" stroke-width="1.35" d="M82 5Q119 3 153 5M212 6Q253 4 286 1M307 9Q335 6 359-.5M55 55Q83 51 109 52M238 52Q278 51 301 47"/>
+            <path opacity=".82" stroke-width=".85" d="M155 11Q176 12 201 9M286 11Q321 9 341 5M29 55Q42 54 54 52M108 56Q144 53 167 53M311 53Q330 49 342 44"/>
+          </g>
+        </g>
+      </pattern>
+      <path id="tag-shape" d="M5 2.5C23 1 36 2.5 48 1.8C61 1.2 72 2.4 80 1.5Q84 2.8 83 6.8Q85 10 83 13.2Q84 17 82.2 21.9Q81.8 24.4 77 24.2C60 25.1 52 23.3 38 24.3C25 25.2 16 23.8 5 25Q1 24.3 1.9 20.6Q.2 17.3 1.5 14.3Q.2 10.7 1.6 7.4Q.4 3.6 5 2.5Z"/>
+      <radialGradient id="hover-hatch-front">
+        <stop offset=".86" stop-color="#fff"/>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="brushwash" x="-10%" y="-20%" width="120%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency=".043 .2" numOctaves="3" seed="9" result="grain"/>
+        <feDisplacementMap in="SourceGraphic" in2="grain" scale="5.5" xChannelSelector="R" yChannelSelector="G" result="paint"/>
+        <feMorphology in="paint" operator="erode" radius="6" result="core"/>
+        <feComposite in="paint" in2="core" operator="out" result="rim"/>
+        <feGaussianBlur in="rim" stdDeviation="2.4" result="soft-rim"/>
+        <feColorMatrix in="grain" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 .26 .31 .13 0 -.13" result="bristles"/>
+        <feComposite in="bristles" in2="soft-rim" operator="in" result="rim-glints"/>
+        <feComposite in="rim-glints" in2="paint" operator="in" result="glints"/>
+        <feMerge><feMergeNode in="paint"/><feMergeNode in="glints"/></feMerge>
+      </filter>
+      <symbol id="arrow" viewBox="0 0 24 24">
+        <path d="M21 12.4 3.2 12M10.4 4.9 3 12l7.2 7.4"/>
+      </symbol>
+      <symbol id="dots" viewBox="0 0 24 24">
+        <circle cx="4" cy="12" r="2.35"/><circle cx="12" cy="11.8" r="2.45"/><circle cx="20" cy="12.1" r="2.4"/>
+      </symbol>
+      <symbol id="edit" viewBox="0 0 24 24">
+        <path d="m3 21 1.4-5.8L17.9 2.6l3.5 3.8L8 19.2 3 21Zm1.4-5.8L8 19.2m7.1-14L19 9"/>
+      </symbol>
+      <symbol id="plus" viewBox="0 0 24 24"><path d="M12 4.6 11.8 20M4.5 12.5l15.1-.4"/></symbol>
+      <symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5q-2-1-2 1.4V18q0 2.4 2 1.4l11.7-6.3q1.8-1.1 0-2.2Z"/></symbol>
+      <symbol id="pause" viewBox="0 0 24 24"><path d="m8 4-.3 15m8.3-15 .3 15"/></symbol>
+      <symbol id="check" viewBox="0 0 24 24"><path d="m3 12 6 6 12-13"/></symbol>
+      <symbol id="clock" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-18 .2A9 9 0 0 1 21 12Zm-9-5.4v5.5l3.6 2.1"/></symbol>
+      <symbol id="next" viewBox="0 0 24 24"><path d="m4 12 14.7.2m-5.8-6.1 6 6-6 6"/></symbol>
+      <symbol id="task-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="alert" viewBox="0 0 24 24">
+        <path d="M22 11.8a10 10 0 1 1-20 .4 10 10 0 1 1 20-.4ZM12 6v6.8m0 4.3v.1"/>
+      </symbol>
+      <symbol id="accent" viewBox="0 0 48 51">
+        <path d="M4 26Q10 12 17 4M19 34q12-7 24-10M24 46l17 1"/>
+      </symbol>
+      <symbol id="corners" viewBox="0 0 580 800">
+        <path fill="#9ed8f1" d="M-18-20H179c-15 17-31 18-50 38-26 25-38 75-65 98-26 21-62 41-82 90Z"/>
+        <path fill="#f6c0ca" d="M593-32h-39c-18 31-9 50-35 79-21 23-62 34-66 69-3 20 14 31 18 57 6 31 25 53 66 56 30 2 42-13 61-32Z"/>
+        <path fill="#f6c0ca" d="M-15 732c34 31 77 24 107 45 17 11 25 24 40 36H-22Z"/>
+        <path fill="#9ed8f1" d="M598 702c-31 3-38 41-66 56-30 17-72 9-108 24l-45 30h222Z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <main class="workspace" id="workspace" data-view="tasks">
+    <section class="screen task-screen" aria-label="Подзадачи">
+      <svg class="corner-paint" viewBox="0 0 580 800" preserveAspectRatio="none" aria-hidden="true">
+        <use href="#corners" filter="url(#brushwash)"/>
+      </svg>
+      <header class="screen-bar">
+        <a class="icon-button" id="overview-link" href="#today" aria-label="Назад к списку задач">
+          <svg class="icon" aria-hidden="true"><use href="#arrow"/></svg>
+        </a>
+        <span class="art characters" aria-hidden="true"></span>
+        <details class="options">
+          <summary class="icon-button" aria-label="Действия с задачей"><svg class="icon dots" aria-hidden="true"><use href="#dots"/></svg></summary>
+          <div class="menu">
+            <a href="#timer" id="open-timer">Открыть таймер</a>
+            <button type="button" id="menu-add">Добавить подзадачу</button>
+          </div>
+        </details>
+      </header>
+
+      <div id="overview" hidden>
+        <h1 class="ink title" id="today-title" tabindex="-1">Сегодня</h1>
+        <a class="outline overview-task" href="#tasks">
+          <span>Разобрать кладовку</span>
+          <small id="overview-count"></small>
+        </a>
+      </div>
+
+      <div id="task-details">
+        <h1 class="ink title" id="tasks-title" tabindex="-1">Разобрать<br>кладовку</h1>
+        <div class="swash" aria-hidden="true"></div>
+        <h2 class="ink section-title">Подзадачи <svg class="accent" aria-hidden="true"><use href="#accent"/></svg></h2>
+        <ul id="subtasks" class="subtasks"></ul>
+        <button type="button" id="add-task" class="outline add-task" data-hover-effect="hatch">
+          <svg class="add-task-hatch" aria-hidden="true" focusable="false">
+            <rect width="100%" height="100%" fill="url(#add-hatch)" mask="url(#add-hatch-center)"/>
+          </svg>
+          <svg class="icon" aria-hidden="true"><use href="#plus"/></svg>Подзадача
+        </button>
+        <button type="button" id="save-tasks" class="filled save-tasks" disabled>
+          <span id="save-label" class="save-caption">Сохранить</span>
+        </button>
+        <span id="save-status" class="visually-hidden" role="status"></span>
+      </div>
+    </section>
+
+    <section class="screen timer-screen" aria-label="Таймер">
+      <svg class="corner-paint timer-corners" viewBox="0 0 580 800" preserveAspectRatio="none" aria-hidden="true">
+        <path filter="url(#brushwash)" fill="#9ed8f1" d="M-15-14h205c-15 28-34 36-68 49-26 10-53 8-79 10C4 48-11 72-18 89ZM-11 713c27 33 54 43 85 53 30 9 51 27 62 43H-17Z"/>
+        <path filter="url(#brushwash)" fill="#f6c0ca" d="M598-16H424c6 32 16 63 44 82 36 25 72 13 96 63 10 20 19 31 32 40ZM592 691c-13 13-23 35-44 52-24 20-74 24-110 32-31 7-67 16-92 37h252Z"/>
+      </svg>
+      <header class="screen-bar">
+        <a class="icon-button" href="#tasks" aria-label="Назад к подзадачам">
+          <svg class="icon" aria-hidden="true"><use href="#arrow"/></svg>
+        </a>
+        <span class="art characters" aria-hidden="true"></span>
+        <details class="options">
+          <summary class="icon-button" aria-label="Действия с таймером"><svg class="icon dots" aria-hidden="true"><use href="#dots"/></svg></summary>
+          <div class="menu">
+            <button type="button" id="restart-timer">Начать заново</button>
+            <a href="#tasks">К подзадачам</a>
+          </div>
+        </details>
+      </header>
+
+      <div class="timer-heading">
+        <p class="parent-title">Разобрать кладовку</p>
+        <h2 class="ink title" id="timer-title" tabindex="-1">Верхняя полка</h2>
+        <div class="swash" aria-hidden="true"></div>
+        <p class="timer-status" id="timer-status" role="status" data-state="running">
+          <svg class="icon" aria-hidden="true"><use id="status-icon" href="#play"/></svg>
+          <span id="status-label">В работе</span>
+        </p>
+      </div>
+
+      <div class="timer-field" id="timer-field">
+        <svg class="field-wash" viewBox="0 0 580 350" preserveAspectRatio="none" aria-hidden="true">
+          <path fill="#addff3" filter="url(#brushwash)" d="M5 174C-8 120 25 70 72 57c43-13 68 9 104 9 35 0 73-12 105-15C389 44 411 3 477 10c55 6 91 34 98 81 5 29-10 55-8 90 2 40 19 76 3 110-25 52-119 62-168 46-56-18-85 15-130 8-38-5-58-24-101-18-37 5-64 23-96 14C35 331-4 292 5 246c7-31 9-41 0-72Z"/>
+        </svg>
+        <div class="timer-reading">
+          <svg class="accent timer-accent" aria-hidden="true"><use href="#accent"/></svg>
+          <output class="ink digits" id="remaining" role="timer" aria-label="Оставшееся время" aria-live="off">32:10</output>
+          <p id="timer-total">Из 45 мин</p>
+        </div>
+        <span class="art orb" aria-hidden="true"></span>
+      </div>
+
+      <p id="timer-empty" class="timer-empty" hidden>Добавь подзадачу с длительностью от 1 до 119 минут, чтобы запустить таймер.</p>
+      <div class="timer-actions" id="timer-actions">
+        <button type="button" id="pause-timer" class="outline" data-hover-effect="hatch">
+          <svg class="icon" aria-hidden="true"><use id="pause-icon" href="#pause"/></svg><span id="pause-label">Пауза</span>
+        </button>
+        <button type="button" id="finish-timer" class="filled coral">
+          <svg class="icon" aria-hidden="true"><use id="finish-icon" href="#check"/></svg><span id="finish-label">Завершить</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="task-editor" aria-labelledby="editor-title">
+    <form id="edit-form" novalidate>
+      <h2 class="ink" id="editor-title">Подзадача</h2>
+      <label for="task-name">Название</label>
+      <div class="editor-input"><input id="task-name" type="text" required maxlength="70" autocomplete="off" placeholder="Например, разобрать обувь"></div>
+      <label for="task-minutes">Длительность, мин</label>
+      <div class="editor-input"><input id="task-minutes" type="number" inputmode="numeric" required min="1" max="119" step="1" aria-describedby="minutes-error"></div>
+      <p id="minutes-error" class="field-error" aria-live="polite"></p>
+      <div class="editor-actions">
+        <button type="button" id="cancel-edit" class="outline">Отмена</button>
+        <button type="submit" id="apply-edit" class="filled">Готово</button>
+      </div>
+      <button type="button" class="delete-task" id="delete-task">Удалить подзадачу</button>
+    </form>
+  </dialog>
+
+  <template id="task-row-template">
+    <li>
+      <div class="task-row">
+        <button type="button" class="task-open">
+          <svg class="icon task-state-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#task-dot"/></svg>
+          <span class="task-copy">
+            <span class="task-name"></span>
+            <span class="task-status" hidden></span>
+          </span>
+          <time class="minutes">
+            <svg class="minutes-tag" viewBox="0 0 84 26" preserveAspectRatio="none" aria-hidden="true"><use href="#tag-shape"/></svg>
+            <span class="minutes-value"></span>
+          </time>
+        </button>
+        <button type="button" class="icon-button task-edit">
+          <svg class="icon" aria-hidden="true"><use href="#edit"/></svg>
+        </button>
+      </div>
+      <p class="task-error" hidden><svg class="icon" aria-hidden="true"><use href="#alert"/></svg><span></span></p>
+    </li>
+  </template>
+  <template id="control-ink-template">
+    <span class="control-ink" aria-hidden="true">
+      <svg class="control-ink-left" viewBox="0 0 36 58" preserveAspectRatio="none">
+        <g transform="translate(36 0) scale(-1 1)">
+          <path pathLength="1" vector-effect="non-scaling-stroke" d="M5 18Q16 14 29 6"/>
+          <path pathLength="1" vector-effect="non-scaling-stroke" d="M6 29Q18 30 32 28"/>
+          <path pathLength="1" vector-effect="non-scaling-stroke" d="M5 40Q17 44 30 51"/>
+        </g>
+      </svg>
+      <svg class="control-ink-right" viewBox="0 0 36 58" preserveAspectRatio="none">
+        <path pathLength="1" vector-effect="non-scaling-stroke" d="M5 17Q16 12 30 6"/>
+        <path pathLength="1" vector-effect="non-scaling-stroke" d="M6 28Q20 27 32 25"/>
+        <path pathLength="1" vector-effect="non-scaling-stroke" d="M5 39Q18 43 29 50"/>
+      </svg>
+    </span>
+  </template>
+</body>
+</html>

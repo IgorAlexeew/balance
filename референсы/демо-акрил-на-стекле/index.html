@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Баланс · Таймер</title>
+  <link rel="stylesheet" href="demo.css">
+  <script src="paint-ring.js" defer></script>
+  <script src="paint-engine.js" defer></script>
+  <script src="paint-engine-ring.js" defer></script>
+  <script src="demo.js" defer></script>
+</head>
+<body>
+  <svg class="filter-definitions" width="0" height="0" aria-hidden="true">
+    <defs>
+      <filter id="pink-paint" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="
+          .2615 .8797 .0888 0 .33
+          .1913 .6437 .0650 0 -.14
+          .2445 .8225 .0830 0 .09
+          0 0 0 1 0" />
+      </filter>
+      <filter id="ivory-paint" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency=".21 .62" numOctaves="2" seed="8" result="bristle-grain" />
+        <feDisplacementMap in="SourceGraphic" in2="bristle-grain" scale="1.35" xChannelSelector="R" yChannelSelector="G" />
+        <feColorMatrix type="matrix" values="
+          .0765 .2575 .0260 0 .829
+          .0765 .2575 .0260 0 .814
+          .0765 .2575 .0260 0 .778
+          0 0 0 1 0" />
+      </filter>
+    </defs>
+  </svg>
+
+  <main class="app">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="paint-text">Баланс</span></div>
+      <button class="quiet-button reset" id="reset" type="button">Сбросить</button>
+    </header>
+
+    <h1 class="paint-text">Сегодня</h1>
+    <section class="glass" aria-labelledby="task-title">
+      <h2 id="task-title" class="paint-text">Заказать зеркало</h2>
+      <p class="task-details">25 мин · Игорь</p>
+
+      <div class="dial">
+        <svg class="dial-paint" viewBox="0 0 400 400" aria-hidden="true">
+          <defs>
+            <image id="ring-material" href="paint-ring.png" width="400" height="400" />
+            <filter id="soften-bristles">
+              <feGaussianBlur stdDeviation=".55" />
+            </filter>
+            <filter id="soften-paint-cap">
+              <feGaussianBlur stdDeviation="1" />
+            </filter>
+            <path id="ring-paint-cap" />
+            <mask id="ring-pigment" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400" style="mask-type: alpha">
+              <g filter="url(#soften-bristles)">
+                <g id="ring-bristles" transform="rotate(-90 200 200)"></g>
+              </g>
+              <use href="#ring-paint-cap" fill="white" filter="url(#soften-paint-cap)" />
+            </mask>
+            <clipPath id="ring-paint-cap-clip">
+              <use href="#ring-paint-cap" />
+            </clipPath>
+            <linearGradient id="front-glaze" gradientUnits="userSpaceOnUse" x1="155" y1="51" x2="201" y2="51">
+              <stop offset="0" stop-color="#792153" stop-opacity="0" />
+              <stop offset=".55" stop-color="#792153" stop-opacity=".13" />
+              <stop offset=".8" stop-color="#ffe0ee" stop-opacity=".23" />
+              <stop offset=".95" stop-color="#ffe0ee" stop-opacity=".26" />
+              <stop offset="1" stop-color="#ffe0ee" stop-opacity=".09" />
+            </linearGradient>
+            <filter id="front-specular" color-interpolation-filters="sRGB">
+              <feColorMatrix type="matrix" values="
+                0 0 0 0 1
+                0 0 0 0 .81
+                0 0 0 0 .90
+                .40 1.36 .14 0 -.94" />
+              <feComposite in2="SourceAlpha" operator="in" />
+            </filter>
+            <mask id="ring-alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400" style="mask-type: alpha">
+              <use href="#ring-material" />
+            </mask>
+          </defs>
+          <use href="#ring-material" />
+          <g id="ring-color" mask="url(#ring-pigment)">
+            <use href="#ring-material" filter="url(#pink-paint)" />
+          </g>
+          <g class="ring-glaze" mask="url(#ring-alpha)" clip-path="url(#ring-paint-cap-clip)">
+            <g id="ring-paint-glaze" opacity="0">
+              <rect x="155" y="24" width="47" height="55" fill="url(#front-glaze)" />
+              <image href="paint-front.png" x="151" y="5" width="51" height="94" preserveAspectRatio="none"
+                opacity=".31" filter="url(#front-specular)" />
+            </g>
+          </g>
+        </svg>
+        <canvas class="dial-paint" id="paint-engine-layer" aria-hidden="true" hidden></canvas>
+        <div class="dial-reading">
+          <output class="paint-text digits" id="remaining" role="timer" aria-label="Оставшееся время" aria-live="off">18:42</output>
+          <span class="dial-status" id="status" role="status">На паузе</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="paint-button" id="toggle" type="button">
+          <span id="toggle-label" class="paint-text">Продолжить</span>
+          <span class="paint-contact" aria-hidden="true"><span></span><span></span></span>
+        </button>
+        <button class="quiet-button finish" id="finish" type="button"><span class="paint-text">Завершить</span></button>
+      </div>
+    </section>
+    <p class="speed">Демонстрация · таймер ускорен в 24 раза</p>
+    <button class="quiet-button brush-switch" id="brush-switch" type="button" hidden>Показать прежний мазок</button>
+  </main>
+</body>
+</html>
